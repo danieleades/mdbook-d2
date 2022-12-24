@@ -10,7 +10,7 @@
 #![warn(clippy::pedantic, clippy::nursery)]
 
 use mdbook::{
-    book::Book,
+    book::{Book, Chapter},
     errors::Error,
     preprocess::{Preprocessor, PreprocessorContext},
     BookItem,
@@ -19,7 +19,7 @@ use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag};
 use pulldown_cmark_to_cmark::cmark;
 
 mod backend;
-use backend::Backend;
+use backend::{Backend, RenderContext};
 
 mod config;
 
@@ -35,11 +35,11 @@ impl Preprocessor for D2 {
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, Error> {
         let backend = Backend::from_context(ctx);
 
-        for section in &mut book.sections {
+        book.for_each_mut(|section| {
             if let BookItem::Chapter(chapter) = section {
                 let events = process_events(
                     &backend,
-                    &chapter.name,
+                    chapter,
                     Parser::new_ext(&chapter.content, Options::all()),
                 );
 
@@ -50,7 +50,7 @@ impl Preprocessor for D2 {
                 cmark(events, &mut buf).unwrap();
                 chapter.content = buf;
             }
-        }
+        });
 
         Ok(book)
     }
@@ -62,7 +62,7 @@ impl Preprocessor for D2 {
 
 fn process_events<'a>(
     backend: &'a Backend,
-    chapter: &'a str,
+    chapter: &'a Chapter,
     events: impl Iterator<Item = Event<'a>> + 'a,
 ) -> impl Iterator<Item = Event<'a>> + 'a {
     let mut in_block = false;
@@ -92,7 +92,13 @@ fn process_events<'a>(
             // check if we are exiting a d2 block
             (Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(CowStr::Borrowed("d2")))), true) => {
                 in_block = false;
-                backend.render(chapter, diagram_index, &diagram)
+                let render_context = RenderContext::new(
+                    chapter.source_path.as_ref().unwrap(),
+                    &chapter.name,
+                    chapter.number.as_ref(),
+                    diagram_index,
+                );
+                backend.render(render_context, &diagram)
             }
             // if nothing matches, change nothing
             _ => vec![event],
