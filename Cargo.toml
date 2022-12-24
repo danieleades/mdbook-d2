@@ -1,0 +1,21 @@
+[package]
+name = "mdbook-d2"
+description = "D2 diagram generator plugin for MdBook"
+version = "0.1.0"
+authors = ["Daniel Eades <danieleades@hotmail.com>"]
+edition = "2021"
+license = "MIT"
+keywords = ["mdbook", "d2", "markdown", "commonmark"]
+categories = ["command-line-utilities", "text-processing", "visualization"]
+repository = "https://github.com/danieleades/mdbook-d2"
+
+[dependencies]
+clap = { version = "4.0", features = ["derive"] }
+serde_json = "1.0"
+semver = "1.0"
+
+mdbook = "0.4"
+pulldown-cmark = "0.9"
+pulldown-cmark-to-cmark = "10.0"
+serde = { version = "1.0.151", features = ["derive"] }
+toml = "0.5.10"

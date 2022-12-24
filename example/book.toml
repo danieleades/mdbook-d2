@@ -1,0 +1,9 @@
+[book]
+authors = ["daniel.eades"]
+language = "en"
+multilingual = false
+src = "src"
+title = "example"
+
+[preprocessor.d2]
+command = "cargo run --manifest-path ../Cargo.toml"
