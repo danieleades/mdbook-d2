@@ -72,12 +72,17 @@ impl Backend {
         &self.output_dir
     }
 
-    pub fn render(&self, ctx: RenderContext, content: &str) -> Vec<Event<'static>> {
-        let filename = filename(&ctx);
-        let filepath = Path::new("src").join(self.output_dir()).join(&filename);
-        fs::create_dir_all(Path::new("src").join(self.output_dir())).unwrap();
+    fn filepath(&self, ctx: &RenderContext) -> PathBuf {
+        Path::new("src").join(self.relative_file_path(ctx))
+    }
 
-        let mut child = Command::new(&self.path)
+    fn relative_file_path(&self, ctx: &RenderContext) -> PathBuf {
+        let filename = filename(ctx);
+        self.output_dir().join(filename)
+    }
+
+    fn run_command(&self, ctx: &RenderContext, content: &str) {
+        let child = Command::new(&self.path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -85,14 +90,14 @@ impl Backend {
                 OsStr::new("--layout"),
                 self.layout.as_ref(),
                 OsStr::new("-"),
-                filepath.as_os_str(),
+                self.filepath(ctx).as_os_str(),
             ])
             .spawn()
             .expect("failed");
 
         child
             .stdin
-            .take()
+            .as_ref()
             .unwrap()
             .write_all(content.as_bytes())
             .unwrap();
@@ -107,11 +112,18 @@ impl Backend {
             );
             eprintln!("{msg}");
         }
+    }
+
+    pub fn render(&self, ctx: RenderContext, content: &str) -> Vec<Event<'static>> {
+        fs::create_dir_all(Path::new("src").join(self.output_dir())).unwrap();
+
+        self.run_command(&ctx, content);
 
         let depth = ctx.path.ancestors().count() - 1;
-        let rel_path = PathBuf::from("../".repeat(depth))
-            .join(self.output_dir())
-            .join(filename);
+        let rel_path: PathBuf = std::iter::repeat(Path::new(".."))
+            .take(depth)
+            .collect::<PathBuf>()
+            .join(self.relative_file_path(&ctx));
 
         vec![
             Event::Start(Tag::Image(
