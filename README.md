@@ -1,5 +1,8 @@
 # D2 preprocessor for mdbook
 
+[![codecov](https://codecov.io/gh/danieleades/mdbook-d2/branch/main/graph/badge.svg?token=BIHcAnynaN)](https://codecov.io/gh/danieleades/mdbook-d2)
+[![Continuous integration](https://github.com/danieleades/mdbook-d2/actions/workflows/CI.yml/badge.svg)](https://github.com/danieleades/mdbook-d2/actions/workflows/CI.yml)
+
 A preprocessor for [mdbook](https://github.com/rust-lang/mdBook) to convert
 `d2` codeblocks into SVG images using
 [D2](https://github.com/terrastruct/d2).
