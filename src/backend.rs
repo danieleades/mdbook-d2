@@ -56,7 +56,13 @@ impl Backend {
             .write_all(content.as_bytes())
             .unwrap();
 
-        child.wait_with_output().unwrap();
+        let output = child.wait_with_output().unwrap();
+        if !output.status.success() {
+            let src =
+                format!("\n{}", String::from_utf8_lossy(&output.stderr)).replace('\n', "\n  ");
+            let msg = format!("failed to compile D2 diagram ({chapter}, #{diagram_index}):{src}");
+            eprintln!("{msg}");
+        }
 
         let rel_path = format!("d2/{filename}");
 
