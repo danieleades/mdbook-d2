@@ -12,7 +12,7 @@ defendants: {
 
   mc -> playmagnus: Owns majority
   playmagnus <-> chesscom: Merger talks
-  chesscom -><> naka: Sponsoring
+  chesscom -> naka: Sponsoring
 }
 
 # Accusations
