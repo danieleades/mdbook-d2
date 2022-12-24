@@ -6,27 +6,36 @@ use std::{
     process::{Command, Stdio},
 };
 
+use mdbook::preprocess::PreprocessorContext;
 use pulldown_cmark::{CowStr, Event, LinkType, Tag};
 use serde::Deserialize;
 
-fn d2_default_binary_path() -> PathBuf {
-    PathBuf::from("d2")
-}
-
-fn default_output_dir() -> PathBuf {
-    PathBuf::from("d2")
-}
+use crate::config::Config;
 
 #[derive(Deserialize)]
+#[serde(from = "Config")]
 pub struct Backend {
-    #[serde(default = "d2_default_binary_path")]
     path: PathBuf,
-
-    #[serde(default = "default_output_dir")]
     output_dir: PathBuf,
+    layout: String,
+}
+
+impl From<Config> for Backend {
+    fn from(config: Config) -> Self {
+        Self {
+            path: config.path,
+            output_dir: config.output_dir,
+            layout: config.layout,
+        }
+    }
 }
 
 impl Backend {
+    pub fn from_context(ctx: &PreprocessorContext) -> Self {
+        let value: toml::Value = ctx.config.get_preprocessor("d2").unwrap().clone().into();
+        value.try_into().unwrap()
+    }
+
     fn output_dir(&self) -> PathBuf {
         Path::new("src").join(&self.output_dir)
     }
@@ -45,7 +54,12 @@ impl Backend {
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .args([OsStr::new("-"), filepath.as_os_str()])
+            .args([
+                OsStr::new("--layout"),
+                self.layout.as_ref(),
+                OsStr::new("-"),
+                filepath.as_os_str(),
+            ])
             .spawn()
             .expect("failed");
 
