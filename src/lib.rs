@@ -21,6 +21,8 @@ use pulldown_cmark_to_cmark::cmark;
 mod backend;
 use backend::Backend;
 
+mod config;
+
 /// [D2] diagram generator [`Preprocessor`] for [`MdBook`](https://rust-lang.github.io/mdBook/).
 #[derive(Default, Clone, Copy, Debug)]
 pub struct D2;
@@ -31,8 +33,8 @@ impl Preprocessor for D2 {
     }
 
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, Error> {
-        let value: toml::Value = ctx.config.get_preprocessor("d2").unwrap().clone().into();
-        let backend: Backend = value.try_into().unwrap();
+        let backend = Backend::from_context(ctx);
+
         for section in &mut book.sections {
             if let BookItem::Chapter(chapter) = section {
                 let events = process_events(

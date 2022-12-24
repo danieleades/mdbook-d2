@@ -34,8 +34,18 @@ d2 --version
 ## Usage
 
 Add this to your `book.toml`:
+
 ```toml
 [preprocessor.d2]
+# path to d2 binary.
+# optional. default is "d2" (ie. on the path).
+path = "d2"
+# layout engine for diagrams. See https://github.com/terrastruct/d2#plugins.
+# optional. default is "dagre".
+layout = "dagre"
+# output directory relative to `src/` for generated diagrams.
+# optional. default is "d2".
+output-dir = "d2"
 ```
 
 ## Thanks
