@@ -6,7 +6,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use mdbook::preprocess::PreprocessorContext;
+use mdbook::{book::SectionNumber, preprocess::PreprocessorContext};
 use pulldown_cmark::{CowStr, Event, LinkType, Tag};
 use serde::Deserialize;
 
@@ -30,27 +30,59 @@ impl From<Config> for Backend {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct RenderContext<'a> {
+    path: &'a Path,
+    chapter: &'a str,
+    section: Option<&'a SectionNumber>,
+    diagram_index: usize,
+}
+
+impl<'a> RenderContext<'a> {
+    pub const fn new(
+        path: &'a Path,
+        chapter: &'a str,
+        section: Option<&'a SectionNumber>,
+        diagram_index: usize,
+    ) -> Self {
+        Self {
+            path,
+            chapter,
+            section,
+            diagram_index,
+        }
+    }
+}
+
+fn filename(ctx: &RenderContext) -> String {
+    format!(
+        "{}{}.svg",
+        ctx.section.cloned().unwrap_or_default(),
+        ctx.diagram_index
+    )
+}
+
 impl Backend {
     pub fn from_context(ctx: &PreprocessorContext) -> Self {
         let value: toml::Value = ctx.config.get_preprocessor("d2").unwrap().clone().into();
         value.try_into().unwrap()
     }
 
-    fn output_dir(&self) -> PathBuf {
-        Path::new("src").join(&self.output_dir)
+    fn output_dir(&self) -> &Path {
+        &self.output_dir
     }
 
-    pub fn render(
-        &self,
-        chapter: &str,
-        diagram_index: usize,
-        content: &str,
-    ) -> Vec<Event<'static>> {
-        let filename = format!("{chapter}-{diagram_index}.svg");
-        let filepath = self.output_dir().join(&filename);
-        fs::create_dir_all(self.output_dir()).unwrap();
+    fn filepath(&self, ctx: &RenderContext) -> PathBuf {
+        Path::new("src").join(self.relative_file_path(ctx))
+    }
 
-        let mut child = Command::new(&self.path)
+    fn relative_file_path(&self, ctx: &RenderContext) -> PathBuf {
+        let filename = filename(ctx);
+        self.output_dir().join(filename)
+    }
+
+    fn run_command(&self, ctx: &RenderContext, content: &str) {
+        let child = Command::new(&self.path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -58,14 +90,14 @@ impl Backend {
                 OsStr::new("--layout"),
                 self.layout.as_ref(),
                 OsStr::new("-"),
-                filepath.as_os_str(),
+                self.filepath(ctx).as_os_str(),
             ])
             .spawn()
             .expect("failed");
 
         child
             .stdin
-            .take()
+            .as_ref()
             .unwrap()
             .write_all(content.as_bytes())
             .unwrap();
@@ -74,21 +106,34 @@ impl Backend {
         if !output.status.success() {
             let src =
                 format!("\n{}", String::from_utf8_lossy(&output.stderr)).replace('\n', "\n  ");
-            let msg = format!("failed to compile D2 diagram ({chapter}, #{diagram_index}):{src}");
+            let msg = format!(
+                "failed to compile D2 diagram ({}, #{}):{src}",
+                ctx.chapter, ctx.diagram_index
+            );
             eprintln!("{msg}");
         }
+    }
 
-        let rel_path = format!("d2/{filename}");
+    pub fn render(&self, ctx: RenderContext, content: &str) -> Vec<Event<'static>> {
+        fs::create_dir_all(Path::new("src").join(self.output_dir())).unwrap();
+
+        self.run_command(&ctx, content);
+
+        let depth = ctx.path.ancestors().count() - 1;
+        let rel_path: PathBuf = std::iter::repeat(Path::new(".."))
+            .take(depth)
+            .collect::<PathBuf>()
+            .join(self.relative_file_path(&ctx));
 
         vec![
             Event::Start(Tag::Image(
                 LinkType::Inline,
-                rel_path.clone().into(),
+                rel_path.to_string_lossy().to_string().into(),
                 CowStr::Borrowed(""),
             )),
             Event::End(Tag::Image(
                 LinkType::Inline,
-                rel_path.into(),
+                rel_path.to_string_lossy().to_string().into(),
                 CowStr::Borrowed(""),
             )),
         ]
