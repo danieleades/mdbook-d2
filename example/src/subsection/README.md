@@ -1,3 +1,0 @@
-# Subsection
-
-subsection content
