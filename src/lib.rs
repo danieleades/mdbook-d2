@@ -54,10 +54,6 @@ impl Preprocessor for D2 {
 
         Ok(book)
     }
-
-    fn supports_renderer(&self, _renderer: &str) -> bool {
-        true
-    }
 }
 
 fn process_events<'a>(
