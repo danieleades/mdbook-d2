@@ -9,7 +9,7 @@ use mdbook::preprocess::PreprocessorContext;
 use pulldown_cmark::{CowStr, Event, LinkType, Tag};
 use serde::Deserialize;
 
-use crate::config::Config;
+use crate::config::{Config, FileExtension};
 
 #[derive(Deserialize)]
 #[serde(from = "Config")]
@@ -17,6 +17,7 @@ pub struct Backend {
     path: PathBuf,
     output_dir: PathBuf,
     layout: String,
+    file_extension: FileExtension,
 }
 
 impl From<Config> for Backend {
@@ -25,6 +26,7 @@ impl From<Config> for Backend {
             path: config.path,
             output_dir: config.output_dir,
             layout: config.layout,
+            file_extension: config.file_extension,
         }
     }
 }
@@ -53,11 +55,12 @@ impl<'a> RenderContext<'a> {
     }
 }
 
-fn filename(ctx: &RenderContext) -> String {
+fn filename(ctx: &RenderContext, file_extension: &str) -> String {
     format!(
-        "{}{}.svg",
+        "{}{}.{}",
         ctx.section.cloned().unwrap_or_default(),
-        ctx.diagram_index
+        ctx.diagram_index,
+        file_extension,
     )
 }
 
@@ -76,7 +79,7 @@ impl Backend {
     }
 
     fn relative_file_path(&self, ctx: &RenderContext) -> PathBuf {
-        let filename = filename(ctx);
+        let filename = filename(ctx, self.file_extension.as_ref());
         self.output_dir().join(filename)
     }
 
