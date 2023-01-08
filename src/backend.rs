@@ -124,7 +124,7 @@ impl Backend {
             .collect::<PathBuf>()
             .join(self.relative_file_path(&ctx));
 
-        match fs::read_to_string(rel_path).map(CowStr::from) {
+        match fs::read_to_string(self.relative_file_path(&ctx)).map(CowStr::from) {
             Err(_why) => CowStr::from(""),
             Ok(ret) => ret,
         }
