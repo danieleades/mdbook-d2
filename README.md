@@ -48,6 +48,9 @@ layout = "dagre"
 # output directory relative to `src/` for generated diagrams.
 # optional. default is "d2".
 output-dir = "d2"
+# set the file extension of the rendered files.
+# optional. default is "svg". Options are "svg" or "png".
+file-extension = "svg"
 ```
 
 ### Code Blocks
