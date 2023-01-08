@@ -56,8 +56,8 @@ pub enum FileExtension {
 impl AsRef<str> for FileExtension {
     fn as_ref(&self) -> &str {
         match self {
-            FileExtension::Svg => "svg",
-            FileExtension::Png => "png",
+            Self::Svg => "svg",
+            Self::Png => "png",
         }
     }
 }
