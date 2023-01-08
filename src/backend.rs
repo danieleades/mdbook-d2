@@ -113,20 +113,14 @@ impl Backend {
         }
     }
 
-    pub fn render(&self, ctx: RenderContext, content: &str) -> CowStr {
+    pub fn render(&self, ctx: RenderContext, content: &str) -> Result<Event, mdbook::errors::Error> {
         fs::create_dir_all(Path::new("src").join(self.output_dir())).unwrap();
 
         self.run_command(&ctx, content);
 
-        let depth = ctx.path.ancestors().count() - 1;
-        let rel_path: PathBuf = std::iter::repeat(Path::new(".."))
-            .take(depth)
-            .collect::<PathBuf>()
-            .join(self.relative_file_path(&ctx));
-
-        match fs::read_to_string(self.relative_file_path(&ctx)).map(CowStr::from) {
-            Err(_why) => CowStr::from(""),
-            Ok(ret) => ret,
+        match fs::read_to_string(self.relative_file_path(&ctx)) {
+            Ok(svg) => Ok(Event::Html(CowStr::from(svg))),
+            Err(err) => Err(mdbook::errors::Error::new(err)),
         }
     }
 }

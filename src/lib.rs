@@ -39,7 +39,7 @@ impl Preprocessor for D2 {
                     &backend,
                     chapter,
                     Parser::new_ext(&chapter.content, Options::all()),
-                );
+                    );
 
                 // create a buffer in which we can place the markdown
                 let mut buf = String::with_capacity(chapter.content.len() + 128);
@@ -49,7 +49,6 @@ impl Preprocessor for D2 {
                 chapter.content = buf;
             }
         });
-
         Ok(book)
     }
 }
@@ -58,7 +57,7 @@ fn process_events<'a>(
     backend: &'a Backend,
     chapter: &'a Chapter,
     events: impl Iterator<Item = Event<'a>> + 'a,
-) -> impl Iterator<Item = Event<'a>> + 'a {
+) -> Result<impl Iterator<Item = Event<'a>> + 'a, Error> {
     let mut in_block = false;
     // if Windows crlf line endings are used, a code block will consist
     // of many different Text blocks, thus we need to buffer them in here
@@ -91,8 +90,8 @@ fn process_events<'a>(
                     &chapter.name,
                     chapter.number.as_ref(),
                     diagram_index,
-                );
-                vec![Event::Html(backend.render(render_context, &diagram))]
+                    );
+                vec![backend.render(render_context, &diagram)?]
             }
             // if nothing matches, change nothing
             _ => vec![event],
