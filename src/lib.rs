@@ -92,7 +92,7 @@ fn process_events<'a>(
                     chapter.number.as_ref(),
                     diagram_index,
                 );
-                backend.render(render_context, &diagram)
+                vec![Event::Html(backend.render(render_context, &diagram))]
             }
             // if nothing matches, change nothing
             _ => vec![event],

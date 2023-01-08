@@ -113,7 +113,7 @@ impl Backend {
         }
     }
 
-    pub fn render(&self, ctx: RenderContext, content: &str) -> Vec<Event<'static>> {
+    pub fn render(&self, ctx: RenderContext, content: &str) -> CowStr {
         fs::create_dir_all(Path::new("src").join(self.output_dir())).unwrap();
 
         self.run_command(&ctx, content);
@@ -124,17 +124,9 @@ impl Backend {
             .collect::<PathBuf>()
             .join(self.relative_file_path(&ctx));
 
-        vec![
-            Event::Start(Tag::Image(
-                LinkType::Inline,
-                rel_path.to_string_lossy().to_string().into(),
-                CowStr::Borrowed(""),
-            )),
-            Event::End(Tag::Image(
-                LinkType::Inline,
-                rel_path.to_string_lossy().to_string().into(),
-                CowStr::Borrowed(""),
-            )),
-        ]
+        match fs::read_to_string(rel_path).map(CowStr::from) {
+            Err(_why) => CowStr::from(""),
+            Ok(ret) => ret,
+        }
     }
 }
