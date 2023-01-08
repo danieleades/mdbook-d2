@@ -1,10 +1,8 @@
 use std::{io, process};
 
 use clap::Parser;
-use mdbook::{
-    errors::Error,
-    preprocess::{CmdPreprocessor, Preprocessor},
-};
+use mdbook::errors::Error;
+use mdbook::preprocess::{CmdPreprocessor, Preprocessor};
 use mdbook_d2::D2;
 use semver::{Version, VersionReq};
 
