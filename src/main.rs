@@ -1,10 +1,10 @@
+use std::{io, process};
+
 use clap::Parser;
 use mdbook::errors::Error;
 use mdbook::preprocess::{CmdPreprocessor, Preprocessor};
 use mdbook_d2::D2;
 use semver::{Version, VersionReq};
-use std::io;
-use std::process;
 
 #[derive(clap::Parser)]
 pub struct Args {
@@ -39,8 +39,8 @@ fn handle_preprocessing(pre: &dyn Preprocessor) -> Result<(), Error> {
 
     if !version_req.matches(&book_version) {
         eprintln!(
-            "Warning: The {} plugin was built against version {} of mdbook, \
-             but we're being called from version {}",
+            "Warning: The {} plugin was built against version {} of mdbook, but we're being \
+             called from version {}",
             pre.name(),
             mdbook::MDBOOK_VERSION,
             ctx.mdbook_version

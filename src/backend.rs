@@ -1,12 +1,11 @@
-use std::{
-    ffi::OsStr,
-    fs,
-    io::Write,
-    path::{Path, PathBuf},
-    process::{Command, Stdio},
-};
+use std::ffi::OsStr;
+use std::fs;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 
-use mdbook::{book::SectionNumber, preprocess::PreprocessorContext};
+use mdbook::book::SectionNumber;
+use mdbook::preprocess::PreprocessorContext;
 use pulldown_cmark::{CowStr, Event, LinkType, Tag};
 use serde::Deserialize;
 

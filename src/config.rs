@@ -1,5 +1,6 @@
-use serde::Deserialize;
 use std::path::PathBuf;
+
+use serde::Deserialize;
 
 mod default {
     use std::path::PathBuf;
@@ -44,8 +45,9 @@ impl Default for Config {
 mod tests {
     use std::path::PathBuf;
 
-    use super::Config;
     use test_case::test_case;
+
+    use super::Config;
 
     #[test_case(""; "empty")]
     #[test_case(

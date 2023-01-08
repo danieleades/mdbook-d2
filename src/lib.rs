@@ -9,12 +9,10 @@
 )]
 #![warn(clippy::pedantic, clippy::nursery)]
 
-use mdbook::{
-    book::{Book, Chapter},
-    errors::Error,
-    preprocess::{Preprocessor, PreprocessorContext},
-    BookItem,
-};
+use mdbook::book::{Book, Chapter};
+use mdbook::errors::Error;
+use mdbook::preprocess::{Preprocessor, PreprocessorContext};
+use mdbook::BookItem;
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag};
 use pulldown_cmark_to_cmark::cmark;
 
