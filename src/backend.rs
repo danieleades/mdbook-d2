@@ -119,6 +119,7 @@ impl Backend {
             .join(self.relative_file_path(ctx));
 
         Ok(vec![
+            Event::Start(Tag::Paragraph),
             Event::Start(Tag::Image(
                 LinkType::Inline,
                 rel_path.to_string_lossy().to_string().into(),
@@ -129,6 +130,7 @@ impl Backend {
                 rel_path.to_string_lossy().to_string().into(),
                 CowStr::Borrowed(""),
             )),
+            Event::End(Tag::Paragraph),
         ])
     }
 
