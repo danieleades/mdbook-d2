@@ -4,6 +4,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+use anyhow::bail;
 use mdbook::book::SectionNumber;
 use mdbook::preprocess::PreprocessorContext;
 use pulldown_cmark::{CowStr, Event, LinkType, Tag};
@@ -16,6 +17,7 @@ use crate::config::Config;
 pub struct Backend {
     path: PathBuf,
     output_dir: PathBuf,
+    inline: bool,
     layout: String,
 }
 
@@ -24,6 +26,7 @@ impl From<Config> for Backend {
         Self {
             path: config.path,
             output_dir: config.output_dir,
+            inline: config.inline,
             layout: config.layout,
         }
     }
@@ -80,51 +83,42 @@ impl Backend {
         self.output_dir().join(filename)
     }
 
-    fn run_command(&self, ctx: &RenderContext, content: &str) {
-        let child = Command::new(&self.path)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .args([
-                OsStr::new("--layout"),
-                self.layout.as_ref(),
-                OsStr::new("-"),
-                self.filepath(ctx).as_os_str(),
-            ])
-            .spawn()
-            .expect("failed");
-
-        child
-            .stdin
-            .as_ref()
-            .unwrap()
-            .write_all(content.as_bytes())
-            .unwrap();
-
-        let output = child.wait_with_output().unwrap();
-        if !output.status.success() {
-            let src =
-                format!("\n{}", String::from_utf8_lossy(&output.stderr)).replace('\n', "\n  ");
-            let msg = format!(
-                "failed to compile D2 diagram ({}, #{}):{src}",
-                ctx.chapter, ctx.diagram_index
-            );
-            eprintln!("{msg}");
+    pub fn render(
+        &self,
+        ctx: &RenderContext,
+        content: &str,
+    ) -> anyhow::Result<Vec<Event<'static>>> {
+        if self.inline {
+            self.render_inline(ctx, content)
+        } else {
+            self.render_embedded(ctx, content)
         }
     }
 
-    pub fn render(&self, ctx: RenderContext, content: &str) -> Vec<Event<'static>> {
+    fn render_embedded(
+        &self,
+        ctx: &RenderContext,
+        content: &str,
+    ) -> anyhow::Result<Vec<Event<'static>>> {
         fs::create_dir_all(Path::new("src").join(self.output_dir())).unwrap();
 
-        self.run_command(&ctx, content);
+        let filepath = self.filepath(ctx);
+        let args = [
+            OsStr::new("--layout"),
+            self.layout.as_ref(),
+            OsStr::new("-"),
+            filepath.as_os_str(),
+        ];
+
+        self.run_process(ctx, content, args)?;
 
         let depth = ctx.path.ancestors().count() - 2;
         let rel_path: PathBuf = std::iter::repeat(Path::new(".."))
             .take(depth)
             .collect::<PathBuf>()
-            .join(self.relative_file_path(&ctx));
+            .join(self.relative_file_path(ctx));
 
-        vec![
+        Ok(vec![
             Event::Start(Tag::Image(
                 LinkType::Inline,
                 rel_path.to_string_lossy().to_string().into(),
@@ -135,6 +129,60 @@ impl Backend {
                 rel_path.to_string_lossy().to_string().into(),
                 CowStr::Borrowed(""),
             )),
-        ]
+        ])
+    }
+
+    fn render_inline(
+        &self,
+        ctx: &RenderContext,
+        content: &str,
+    ) -> anyhow::Result<Vec<Event<'static>>> {
+        let args = [
+            OsStr::new("--layout"),
+            self.layout.as_ref(),
+            OsStr::new("-"),
+        ];
+
+        let diagram = self.run_process(ctx, content, args)?;
+
+        Ok(vec![Event::Html(format!("<pre>{diagram}</pre>").into())])
+    }
+
+    fn run_process<I, S>(
+        &self,
+        ctx: &RenderContext,
+        content: &str,
+        args: I,
+    ) -> anyhow::Result<String>
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<OsStr>,
+    {
+        let child = Command::new(&self.path)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .args(args)
+            .spawn()?;
+
+        child
+            .stdin
+            .as_ref()
+            .unwrap()
+            .write_all(content.as_bytes())?;
+
+        let output = child.wait_with_output()?;
+        if output.status.success() {
+            let diagram = String::from_utf8_lossy(&output.stdout).to_string();
+            Ok(diagram)
+        } else {
+            let src =
+                format!("\n{}", String::from_utf8_lossy(&output.stderr)).replace('\n', "\n  ");
+            let msg = format!(
+                "failed to compile D2 diagram ({}, #{}):{src}",
+                ctx.chapter, ctx.diagram_index
+            );
+            bail!(msg)
+        }
     }
 }

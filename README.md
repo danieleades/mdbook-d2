@@ -39,13 +39,22 @@ Add this to your `book.toml`:
 
 ```toml
 [preprocessor.d2]
+
 # path to d2 binary.
 # optional. default is "d2" (ie. on the path).
 path = "d2"
+
 # layout engine for diagrams. See https://github.com/terrastruct/d2#plugins.
 # optional. default is "dagre".
 layout = "dagre"
+
+# whether to use inline svg when rendering.
+# if 'false', separate files will be generated in src/<output-dir> and referenced.
+# optional. default is 'true'
+inline = true
+
 # output directory relative to `src/` for generated diagrams.
+# This is ignored if 'inline' is 'true'.
 # optional. default is "d2".
 output-dir = "d2"
 ```

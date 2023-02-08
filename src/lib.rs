@@ -92,7 +92,13 @@ fn process_events<'a>(
                     chapter.number.as_ref(),
                     diagram_index,
                 );
-                backend.render(render_context, &diagram)
+                match backend.render(&render_context, &diagram) {
+                    Ok(events) => events,
+                    Err(e) => {
+                        eprintln!("{e}");
+                        vec![]
+                    }
+                }
             }
             // if nothing matches, change nothing
             _ => vec![event],
