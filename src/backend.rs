@@ -2,7 +2,7 @@ use std::ffi::OsStr;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command, Stdio};
+use std::process::{Command, Stdio};
 
 use anyhow::bail;
 use mdbook::book::SectionNumber;
@@ -83,38 +83,6 @@ impl Backend {
         self.output_dir().join(filename)
     }
 
-    fn generate_d2_file(&self, ctx: &RenderContext, content: &str) -> anyhow::Result<()> {
-        let child = Command::new(&self.path)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .args([
-                OsStr::new("--layout"),
-                self.layout.as_ref(),
-                OsStr::new("-"),
-                self.filepath(ctx).as_os_str(),
-            ])
-            .spawn()?;
-
-        run_process(child, ctx, content)?;
-        Ok(())
-    }
-
-    fn generate_d2_string(&self, ctx: &RenderContext, content: &str) -> anyhow::Result<String> {
-        let child = Command::new(&self.path)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .args([
-                OsStr::new("--layout"),
-                self.layout.as_ref(),
-                OsStr::new("-"),
-            ])
-            .spawn()?;
-
-        run_process(child, ctx, content)
-    }
-
     pub fn render(
         &self,
         ctx: &RenderContext,
@@ -134,7 +102,15 @@ impl Backend {
     ) -> anyhow::Result<Vec<Event<'static>>> {
         fs::create_dir_all(Path::new("src").join(self.output_dir())).unwrap();
 
-        self.generate_d2_file(ctx, content)?;
+        let filepath = self.filepath(ctx);
+        let args = [
+            OsStr::new("--layout"),
+            self.layout.as_ref(),
+            OsStr::new("-"),
+            filepath.as_os_str(),
+        ];
+
+        self.run_process(ctx, content, args)?;
 
         let depth = ctx.path.ancestors().count() - 2;
         let rel_path: PathBuf = std::iter::repeat(Path::new(".."))
@@ -161,31 +137,52 @@ impl Backend {
         ctx: &RenderContext,
         content: &str,
     ) -> anyhow::Result<Vec<Event<'static>>> {
-        let diagram = self.generate_d2_string(ctx, content)?;
+        let args = [
+            OsStr::new("--layout"),
+            self.layout.as_ref(),
+            OsStr::new("-"),
+        ];
 
-        let s = format!("<pre>{diagram}</pre>");
+        let diagram = self.run_process(ctx, content, args)?;
 
-        Ok(vec![Event::Html(s.into())])
+        Ok(vec![Event::Html(format!("<pre>{diagram}</pre>").into())])
     }
-}
 
-fn run_process(child: Child, ctx: &RenderContext, content: &str) -> anyhow::Result<String> {
-    child
-        .stdin
-        .as_ref()
-        .unwrap()
-        .write_all(content.as_bytes())?;
+    fn run_process<I, S>(
+        &self,
+        ctx: &RenderContext,
+        content: &str,
+        args: I,
+    ) -> anyhow::Result<String>
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<OsStr>,
+    {
+        let child = Command::new(&self.path)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .args(args)
+            .spawn()?;
 
-    let output = child.wait_with_output()?;
-    if output.status.success() {
-        let diagram = String::from_utf8_lossy(&output.stdout).to_string();
-        Ok(diagram)
-    } else {
-        let src = format!("\n{}", String::from_utf8_lossy(&output.stderr)).replace('\n', "\n  ");
-        let msg = format!(
-            "failed to compile D2 diagram ({}, #{}):{src}",
-            ctx.chapter, ctx.diagram_index
-        );
-        bail!(msg)
+        child
+            .stdin
+            .as_ref()
+            .unwrap()
+            .write_all(content.as_bytes())?;
+
+        let output = child.wait_with_output()?;
+        if output.status.success() {
+            let diagram = String::from_utf8_lossy(&output.stdout).to_string();
+            Ok(diagram)
+        } else {
+            let src =
+                format!("\n{}", String::from_utf8_lossy(&output.stderr)).replace('\n', "\n  ");
+            let msg = format!(
+                "failed to compile D2 diagram ({}, #{}):{src}",
+                ctx.chapter, ctx.diagram_index
+            );
+            bail!(msg)
+        }
     }
 }
