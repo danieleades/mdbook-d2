@@ -184,6 +184,10 @@ impl Backend {
     fn render_inline(&self, ctx: RenderContext, content: &str) -> Vec<Event<'static>> {
         let diagram = self.generate_d2_string(ctx, content).unwrap();
 
-        vec![Event::Html(diagram.into())]
+        let s = format!(
+            "<pre>{diagram}</pre>"
+        );
+
+        vec![Event::Html(s.into())]
     }
 }
