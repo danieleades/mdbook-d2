@@ -1,9 +1,10 @@
 use std::ffi::OsStr;
+use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
-use std::{fs, io};
+use std::process::{Child, Command, Stdio};
 
+use anyhow::bail;
 use mdbook::book::SectionNumber;
 use mdbook::preprocess::PreprocessorContext;
 use pulldown_cmark::{CowStr, Event, LinkType, Tag};
@@ -82,7 +83,7 @@ impl Backend {
         self.output_dir().join(filename)
     }
 
-    fn generate_d2_file(&self, ctx: &RenderContext, content: &str) {
+    fn generate_d2_file(&self, ctx: &RenderContext, content: &str) -> anyhow::Result<()> {
         let child = Command::new(&self.path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -93,29 +94,13 @@ impl Backend {
                 OsStr::new("-"),
                 self.filepath(ctx).as_os_str(),
             ])
-            .spawn()
-            .expect("failed");
+            .spawn()?;
 
-        child
-            .stdin
-            .as_ref()
-            .unwrap()
-            .write_all(content.as_bytes())
-            .unwrap();
-
-        let output = child.wait_with_output().unwrap();
-        if !output.status.success() {
-            let src =
-                format!("\n{}", String::from_utf8_lossy(&output.stderr)).replace('\n', "\n  ");
-            let msg = format!(
-                "failed to compile D2 diagram ({}, #{}):{src}",
-                ctx.chapter, ctx.diagram_index
-            );
-            eprintln!("{msg}");
-        }
+        run_process(child, ctx, content)?;
+        Ok(())
     }
 
-    fn generate_d2_string(&self, ctx: RenderContext, content: &str) -> io::Result<String> {
+    fn generate_d2_string(&self, ctx: &RenderContext, content: &str) -> anyhow::Result<String> {
         let child = Command::new(&self.path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -127,28 +112,14 @@ impl Backend {
             ])
             .spawn()?;
 
-        child
-            .stdin
-            .as_ref()
-            .unwrap()
-            .write_all(content.as_bytes())?;
-
-        let output = child.wait_with_output()?;
-        if output.status.success() {
-            let diagram = String::from_utf8_lossy(&output.stdout).to_string();
-            Ok(diagram)
-        } else {
-            let src =
-                format!("\n{}", String::from_utf8_lossy(&output.stderr)).replace('\n', "\n  ");
-            let msg = format!(
-                "failed to compile D2 diagram ({}, #{}):{src}",
-                ctx.chapter, ctx.diagram_index
-            );
-            Err(io::Error::new(io::ErrorKind::Other, msg))
-        }
+        run_process(child, ctx, content)
     }
 
-    pub fn render(&self, ctx: RenderContext, content: &str) -> Vec<Event<'static>> {
+    pub fn render(
+        &self,
+        ctx: &RenderContext,
+        content: &str,
+    ) -> anyhow::Result<Vec<Event<'static>>> {
         if self.inline {
             self.render_inline(ctx, content)
         } else {
@@ -156,18 +127,22 @@ impl Backend {
         }
     }
 
-    fn render_embedded(&self, ctx: RenderContext, content: &str) -> Vec<Event<'static>> {
+    fn render_embedded(
+        &self,
+        ctx: &RenderContext,
+        content: &str,
+    ) -> anyhow::Result<Vec<Event<'static>>> {
         fs::create_dir_all(Path::new("src").join(self.output_dir())).unwrap();
 
-        self.generate_d2_file(&ctx, content);
+        self.generate_d2_file(ctx, content)?;
 
         let depth = ctx.path.ancestors().count() - 2;
         let rel_path: PathBuf = std::iter::repeat(Path::new(".."))
             .take(depth)
             .collect::<PathBuf>()
-            .join(self.relative_file_path(&ctx));
+            .join(self.relative_file_path(ctx));
 
-        vec![
+        Ok(vec![
             Event::Start(Tag::Image(
                 LinkType::Inline,
                 rel_path.to_string_lossy().to_string().into(),
@@ -178,14 +153,39 @@ impl Backend {
                 rel_path.to_string_lossy().to_string().into(),
                 CowStr::Borrowed(""),
             )),
-        ]
+        ])
     }
 
-    fn render_inline(&self, ctx: RenderContext, content: &str) -> Vec<Event<'static>> {
-        let diagram = self.generate_d2_string(ctx, content).unwrap();
+    fn render_inline(
+        &self,
+        ctx: &RenderContext,
+        content: &str,
+    ) -> anyhow::Result<Vec<Event<'static>>> {
+        let diagram = self.generate_d2_string(ctx, content)?;
 
         let s = format!("<pre>{diagram}</pre>");
 
-        vec![Event::Html(s.into())]
+        Ok(vec![Event::Html(s.into())])
+    }
+}
+
+fn run_process(child: Child, ctx: &RenderContext, content: &str) -> anyhow::Result<String> {
+    child
+        .stdin
+        .as_ref()
+        .unwrap()
+        .write_all(content.as_bytes())?;
+
+    let output = child.wait_with_output()?;
+    if output.status.success() {
+        let diagram = String::from_utf8_lossy(&output.stdout).to_string();
+        Ok(diagram)
+    } else {
+        let src = format!("\n{}", String::from_utf8_lossy(&output.stderr)).replace('\n', "\n  ");
+        let msg = format!(
+            "failed to compile D2 diagram ({}, #{}):{src}",
+            ctx.chapter, ctx.diagram_index
+        );
+        bail!(msg)
     }
 }
