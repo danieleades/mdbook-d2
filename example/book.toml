@@ -1,0 +1,13 @@
+[book]
+title = "Example Book"
+
+[preprocessor.d2]
+command = "cargo run --manifest-path ../Cargo.toml"
+inline = true
+
+[output.html]
+
+[output.markdown]
+
+[output.pdf]
+optional = true

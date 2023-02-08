@@ -5,6 +5,10 @@ use serde::Deserialize;
 mod default {
     use std::path::PathBuf;
 
+    pub const fn inline() -> bool {
+        true
+    }
+
     pub fn bin_path() -> PathBuf {
         PathBuf::from("d2")
     }
@@ -21,8 +25,15 @@ mod default {
 #[derive(Deserialize, PartialEq, Eq, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
+    /// The path to the d2 binary
     #[serde(default = "default::bin_path")]
     pub path: PathBuf,
+
+    /// Whether or not to use inline SVG when building an HTML target
+    ///
+    /// Default is 'true'
+    #[serde(default = "default::inline")]
+    pub inline: bool,
 
     #[serde(default = "default::output_dir")]
     pub output_dir: PathBuf,
@@ -34,9 +45,10 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            path: PathBuf::from("d2"),
-            layout: String::from("dagre"),
-            output_dir: PathBuf::from("d2"),
+            path: default::bin_path(),
+            inline: default::inline(),
+            layout: default::layout(),
+            output_dir: default::output_dir(),
         }
     }
 }
@@ -72,6 +84,7 @@ output-dir = "d2-img"
     => Config {
         path: PathBuf::from("/custom/bin/d2"),
         layout: String::from("elk"),
+        inline: true,
         output_dir: PathBuf::from("d2-img"),
     }
         ; "custom"

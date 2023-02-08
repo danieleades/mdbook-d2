@@ -1,8 +1,8 @@
 use std::ffi::OsStr;
-use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::{fs, io};
 
 use mdbook::book::SectionNumber;
 use mdbook::preprocess::PreprocessorContext;
@@ -16,6 +16,7 @@ use crate::config::Config;
 pub struct Backend {
     path: PathBuf,
     output_dir: PathBuf,
+    inline: bool,
     layout: String,
 }
 
@@ -24,6 +25,7 @@ impl From<Config> for Backend {
         Self {
             path: config.path,
             output_dir: config.output_dir,
+            inline: config.inline,
             layout: config.layout,
         }
     }
@@ -80,7 +82,7 @@ impl Backend {
         self.output_dir().join(filename)
     }
 
-    fn run_command(&self, ctx: &RenderContext, content: &str) {
+    fn generate_d2_file(&self, ctx: &RenderContext, content: &str) {
         let child = Command::new(&self.path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -113,10 +115,51 @@ impl Backend {
         }
     }
 
+    fn generate_d2_string(&self, ctx: RenderContext, content: &str) -> io::Result<String> {
+        let child = Command::new(&self.path)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .args([
+                OsStr::new("--layout"),
+                self.layout.as_ref(),
+                OsStr::new("-"),
+            ])
+            .spawn()?;
+
+        child
+            .stdin
+            .as_ref()
+            .unwrap()
+            .write_all(content.as_bytes())?;
+
+        let output = child.wait_with_output()?;
+        if output.status.success() {
+            let diagram = String::from_utf8_lossy(&output.stdout).to_string();
+            Ok(diagram)
+        } else {
+            let src =
+                format!("\n{}", String::from_utf8_lossy(&output.stderr)).replace('\n', "\n  ");
+            let msg = format!(
+                "failed to compile D2 diagram ({}, #{}):{src}",
+                ctx.chapter, ctx.diagram_index
+            );
+            Err(io::Error::new(io::ErrorKind::Other, msg))
+        }
+    }
+
     pub fn render(&self, ctx: RenderContext, content: &str) -> Vec<Event<'static>> {
+        if self.inline {
+            self.render_inline(ctx, content)
+        } else {
+            self.render_embedded(ctx, content)
+        }
+    }
+
+    fn render_embedded(&self, ctx: RenderContext, content: &str) -> Vec<Event<'static>> {
         fs::create_dir_all(Path::new("src").join(self.output_dir())).unwrap();
 
-        self.run_command(&ctx, content);
+        self.generate_d2_file(&ctx, content);
 
         let depth = ctx.path.ancestors().count() - 2;
         let rel_path: PathBuf = std::iter::repeat(Path::new(".."))
@@ -136,5 +179,11 @@ impl Backend {
                 CowStr::Borrowed(""),
             )),
         ]
+    }
+
+    fn render_inline(&self, ctx: RenderContext, content: &str) -> Vec<Event<'static>> {
+        let diagram = self.generate_d2_string(ctx, content).unwrap();
+
+        vec![Event::Html(diagram.into())]
     }
 }
