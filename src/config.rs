@@ -29,6 +29,9 @@ pub struct Config {
 
     #[serde(default = "default::layout")]
     pub layout: String,
+
+    #[serde(default)]
+    pub file_extension: FileExtension,
 }
 
 impl Default for Config {
@@ -37,6 +40,24 @@ impl Default for Config {
             path: PathBuf::from("d2"),
             layout: String::from("dagre"),
             output_dir: PathBuf::from("d2"),
+            file_extension: FileExtension::default(),
+        }
+    }
+}
+
+#[derive(Default, Deserialize, PartialEq, Eq, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub enum FileExtension {
+    #[default]
+    Svg,
+    Png,
+}
+
+impl AsRef<str> for FileExtension {
+    fn as_ref(&self) -> &str {
+        match self {
+            Self::Svg => "svg",
+            Self::Png => "png",
         }
     }
 }
@@ -47,7 +68,7 @@ mod tests {
 
     use test_case::test_case;
 
-    use super::Config;
+    use super::{Config, FileExtension};
 
     #[test_case(""; "empty")]
     #[test_case(
@@ -55,6 +76,7 @@ mod tests {
 path = "d2"
 layout = "dagre"
 output-dir = "d2"
+file-extension = "svg"
 "#
         ; "defaults"
     )]
@@ -68,11 +90,14 @@ output-dir = "d2"
 path = "/custom/bin/d2"
 layout = "elk"
 output-dir = "d2-img"
+file-extension = "png"
 "#
     => Config {
         path: PathBuf::from("/custom/bin/d2"),
         layout: String::from("elk"),
         output_dir: PathBuf::from("d2-img"),
+        file_extension: FileExtension::Png,
+
     }
         ; "custom"
     )]
