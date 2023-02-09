@@ -12,13 +12,13 @@ A preprocessor for [mdbook](https://github.com/rust-lang/mdBook) to convert
 Install with cargo:
 
 ```sh
-cargo install mdbook-d2
+cargo install mdbook-d2 --locked
 ```
 
 Or to install from git:
 
 ```sh
-cargo install --git https://github.com/danieleades/mdbook-d2
+cargo install --git https://github.com/danieleades/mdbook-d2 --locked
 ```
 
 ## Requirements

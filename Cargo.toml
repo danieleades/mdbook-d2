@@ -1,7 +1,7 @@
 [package]
 name = "mdbook-d2"
 description = "D2 diagram generator plugin for MdBook"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Daniel Eades <danieleades@hotmail.com>"]
 edition = "2021"
 license = "MIT"
@@ -18,7 +18,7 @@ mdbook = "0.4"
 pulldown-cmark = "0.9"
 pulldown-cmark-to-cmark = "10.0"
 serde = { version = "1.0.152", features = ["derive"] }
-toml = "0.5.10"
+toml = "0.7"
 anyhow = "1.0.69"
 
 [dev-dependencies]
