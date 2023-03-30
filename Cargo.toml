@@ -1,7 +1,7 @@
 [package]
 name = "mdbook-d2"
 description = "D2 diagram generator plugin for MdBook"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Daniel Eades <danieleades@hotmail.com>"]
 edition = "2021"
 license = "MIT"
