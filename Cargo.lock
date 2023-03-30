@@ -802,7 +802,7 @@ checksum = "256017f749ab3117e93acb91063009e1f1bb56d03965b14c2c8df4eb02c524d8"
 dependencies = [
  "hermit-abi 0.3.1",
  "io-lifetimes",
- "rustix 0.37.4",
+ "rustix 0.37.5",
  "windows-sys 0.45.0",
 ]
 
@@ -949,7 +949,7 @@ dependencies = [
 
 [[package]]
 name = "mdbook-d2"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -1381,9 +1381,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.37.4"
+version = "0.37.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c348b5dc624ecee40108aa2922fed8bad89d7fcc2b9f8cb18f632898ac4a37f9"
+checksum = "0e78cc525325c06b4a7ff02db283472f3c042b7ff0c391f96c6d5ac6f4f91b75"
 dependencies = [
  "bitflags",
  "errno 0.3.0",
@@ -1617,7 +1617,7 @@ dependencies = [
  "cfg-if",
  "fastrand",
  "redox_syscall 0.3.5",
- "rustix 0.37.4",
+ "rustix 0.37.5",
  "windows-sys 0.45.0",
 ]
 
@@ -1682,7 +1682,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
  "test-case-core",
 ]
 
