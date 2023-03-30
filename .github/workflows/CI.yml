@@ -30,10 +30,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all
+      - run: cargo test --all
 
   fmt:
     name: format
@@ -43,10 +40,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+      - run: cargo fmt --all -- --check
 
   clippy:
     name: lint
@@ -67,7 +61,4 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-      - uses: actions-rs/cargo@v1
-        with:
-          command: doc
-          args: --no-deps
+      - run: cargo doc --no-deps
