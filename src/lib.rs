@@ -4,8 +4,7 @@
     clippy::all,
     missing_debug_implementations,
     missing_copy_implementations,
-    missing_docs,
-    clippy::cargo
+    missing_docs
 )]
 #![warn(clippy::pedantic, clippy::nursery)]
 
