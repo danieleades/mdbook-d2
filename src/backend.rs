@@ -7,7 +7,7 @@ use std::process::{Command, Stdio};
 use anyhow::bail;
 use mdbook::book::SectionNumber;
 use mdbook::preprocess::PreprocessorContext;
-use pulldown_cmark::{CowStr, Event, LinkType, Tag};
+use pulldown_cmark::{CowStr, Event, LinkType, Tag, TagEnd};
 use serde::Deserialize;
 
 use crate::config::Config;
@@ -120,17 +120,14 @@ impl Backend {
 
         Ok(vec![
             Event::Start(Tag::Paragraph),
-            Event::Start(Tag::Image(
-                LinkType::Inline,
-                rel_path.to_string_lossy().to_string().into(),
-                CowStr::Borrowed(""),
-            )),
-            Event::End(Tag::Image(
-                LinkType::Inline,
-                rel_path.to_string_lossy().to_string().into(),
-                CowStr::Borrowed(""),
-            )),
-            Event::End(Tag::Paragraph),
+            Event::Start(Tag::Image {
+                link_type: LinkType::Inline,
+                dest_url: rel_path.to_string_lossy().to_string().into(),
+                title: CowStr::Borrowed(""),
+                id: CowStr::Borrowed(""),
+            }),
+            Event::End(TagEnd::Image),
+            Event::End(TagEnd::Paragraph),
         ])
     }
 

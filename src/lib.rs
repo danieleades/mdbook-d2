@@ -13,7 +13,7 @@ use mdbook::book::{Book, Chapter};
 use mdbook::errors::Error;
 use mdbook::preprocess::{Preprocessor, PreprocessorContext};
 use mdbook::BookItem;
-use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag};
+use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd};
 use pulldown_cmark_to_cmark::cmark;
 
 mod backend;
@@ -84,7 +84,7 @@ fn process_events<'a>(
                 vec![]
             }
             // check if we are exiting a d2 block
-            (Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(CowStr::Borrowed("d2")))), true) => {
+            (Event::End(TagEnd::CodeBlock), true) => {
                 in_block = false;
                 let render_context = RenderContext::new(
                     chapter.source_path.as_ref().unwrap(),
