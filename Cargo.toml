@@ -19,7 +19,7 @@ pulldown-cmark = "0.10"
 pulldown-cmark-to-cmark = "13.0"
 serde = { version = "1.0.199", features = ["derive"] }
 toml = "0.5"
-anyhow = "1.0.69"
+anyhow = "1.0.82"
 
 [dev-dependencies]
 test-case = "3.1.0"
