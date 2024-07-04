@@ -153,7 +153,11 @@ impl Backend {
             Event::Start(Tag::Paragraph),
             Event::Start(Tag::Image {
                 link_type: LinkType::Inline,
-                dest_url: rel_path.to_string_lossy().to_string().into(),
+                dest_url: rel_path
+                    .to_string_lossy()
+                    .to_string()
+                    .replace("\\", "/")
+                    .into(),
                 title: CowStr::Borrowed(""),
                 id: CowStr::Borrowed(""),
             }),
