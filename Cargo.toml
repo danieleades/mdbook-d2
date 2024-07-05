@@ -16,7 +16,7 @@ semver = "1.0"
 
 mdbook = "0.4.40"
 pulldown-cmark = "0.10"
-pulldown-cmark-to-cmark = "13.0"
+pulldown-cmark-to-cmark = "15.0"
 serde = { version = "1.0.203", features = ["derive"] }
 toml = "0.5"
 anyhow = "1.0.86"
