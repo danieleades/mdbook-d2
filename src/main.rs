@@ -21,7 +21,7 @@ fn main() {
     let args = Args::parse();
 
     // Users will want to construct their own preprocessor here
-    let preprocessor = D2::default();
+    let preprocessor = D2;
 
     if let Some(Command::Supports { renderer }) = args.command {
         handle_supports(&preprocessor, &renderer);

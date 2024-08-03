@@ -17,7 +17,6 @@ use crate::config::Config;
 pub struct Backend {
     path: PathBuf,
     output_dir: PathBuf,
-    inline: bool,
     layout: String,
 }
 
@@ -26,7 +25,6 @@ impl From<Config> for Backend {
         Self {
             path: config.path,
             output_dir: config.output_dir,
-            inline: config.inline,
             layout: config.layout,
         }
     }
@@ -88,18 +86,6 @@ impl Backend {
         ctx: &RenderContext,
         content: &str,
     ) -> anyhow::Result<Vec<Event<'static>>> {
-        if self.inline {
-            self.render_inline(ctx, content)
-        } else {
-            self.render_embedded(ctx, content)
-        }
-    }
-
-    fn render_embedded(
-        &self,
-        ctx: &RenderContext,
-        content: &str,
-    ) -> anyhow::Result<Vec<Event<'static>>> {
         fs::create_dir_all(Path::new("src").join(self.output_dir())).unwrap();
 
         let filepath = self.filepath(ctx);
@@ -129,22 +115,6 @@ impl Backend {
             Event::End(TagEnd::Image),
             Event::End(TagEnd::Paragraph),
         ])
-    }
-
-    fn render_inline(
-        &self,
-        ctx: &RenderContext,
-        content: &str,
-    ) -> anyhow::Result<Vec<Event<'static>>> {
-        let args = [
-            OsStr::new("--layout"),
-            self.layout.as_ref(),
-            OsStr::new("-"),
-        ];
-
-        let diagram = self.run_process(ctx, content, args)?;
-
-        Ok(vec![Event::Html(format!("<pre>{diagram}</pre>").into())])
     }
 
     fn run_process<I, S>(
