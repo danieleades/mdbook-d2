@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    name: ${{ matrix.build }}
+    name: test (${{ matrix.build }})
     strategy:
       matrix:
         include:
