@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [stable, nightly]
+        build: [stable, nightly, macos]
         include:
           - build: stable
             os: ubuntu-latest
@@ -19,9 +19,9 @@ jobs:
           - build: nightly
             os: ubuntu-latest
             rust: nightly
-#          - build: macos
-#            os: macos-latest
-#            rust: stable
+          - build: macos
+            os: macos-latest
+            rust: stable
 #          - build: windows
 #            os: windows-latest
 #            rust: stable
