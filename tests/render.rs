@@ -1,5 +1,5 @@
-use std::{env, fs, io};
 use std::path::{Path, PathBuf};
+use std::{env, fs, io};
 
 use mdbook::MDBook;
 use mdbook_d2::D2;
