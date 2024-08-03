@@ -18,6 +18,11 @@ jobs:
         with:
           components: llvm-tools-preview
 
+      - name: Install D2
+        run: |
+          curl -fsSL https://d2lang.com/install.sh | sh -s --
+          echo "$(which d2)" >> $GITHUB_PATH
+
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
