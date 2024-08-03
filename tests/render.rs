@@ -44,6 +44,8 @@ fn test_d2_preprocessor_integration() {
     let html_file = root.join("book").join("index.html");
     let html_content = fs::read_to_string(html_file).expect("failed to read html content");
 
+    dbg!(&html_content);
+
     // Make assertions about the processed content
     assert!(html_content.contains(r#"img src="d2/1.1.svg" alt="" />"#));
 }
