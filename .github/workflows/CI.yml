@@ -30,6 +30,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
+      - name: Install D2
+        run: |
+          curl -fsSL https://d2lang.com/install.sh | sh -s --
+          echo "$(which d2)" >> $GITHUB_PATH
       - run: cargo test --all
 
   fmt:
