@@ -41,7 +41,7 @@ fn test_d2_preprocessor_integration() {
     md.build().expect("failed to build book");
 
     // Check the output
-    let html_file = root.join("book").join("index.html");
+    let html_file = root.join("book").join("chapter1.html");
     let html_content = fs::read_to_string(html_file).expect("failed to read html content");
 
     dbg!(&html_content);
