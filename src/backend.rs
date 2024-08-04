@@ -8,26 +8,14 @@ use anyhow::bail;
 use mdbook::book::SectionNumber;
 use mdbook::preprocess::PreprocessorContext;
 use pulldown_cmark::{CowStr, Event, LinkType, Tag, TagEnd};
-use serde::Deserialize;
 
 use crate::config::Config;
 
-#[derive(Deserialize)]
-#[serde(from = "Config")]
 pub struct Backend {
     path: PathBuf,
     output_dir: PathBuf,
+    source_dir: PathBuf,
     layout: String,
-}
-
-impl From<Config> for Backend {
-    fn from(config: Config) -> Self {
-        Self {
-            path: config.path,
-            output_dir: config.output_dir,
-            layout: config.layout,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -63,17 +51,37 @@ fn filename(ctx: &RenderContext) -> String {
 }
 
 impl Backend {
+    pub fn new(config: Config, source_dir: PathBuf) -> Self {
+        Self {
+            path: config.path,
+            output_dir: config.output_dir,
+            layout: config.layout,
+            source_dir,
+        }
+    }
+
     pub fn from_context(ctx: &PreprocessorContext) -> Self {
-        let value: toml::Value = ctx.config.get_preprocessor("d2").unwrap().clone().into();
-        value.try_into().unwrap()
+        let toml_value: toml::Value = ctx
+            .config
+            .get_preprocessor("d2")
+            .expect("d2 preprocessor config not found")
+            .clone()
+            .into();
+        let config: Config = toml_value.try_into().expect("cannot convert toml config");
+
+        Self::new(config, ctx.config.book.src.clone())
     }
 
     fn output_dir(&self) -> &Path {
         &self.output_dir
     }
 
+    fn source_dir(&self) -> &Path {
+        &self.source_dir
+    }
+
     fn filepath(&self, ctx: &RenderContext) -> PathBuf {
-        Path::new("src").join(self.relative_file_path(ctx))
+        Path::new(self.source_dir()).join(self.relative_file_path(ctx))
     }
 
     fn relative_file_path(&self, ctx: &RenderContext) -> PathBuf {
@@ -86,7 +94,7 @@ impl Backend {
         ctx: &RenderContext,
         content: &str,
     ) -> anyhow::Result<Vec<Event<'static>>> {
-        fs::create_dir_all(Path::new("src").join(self.output_dir())).unwrap();
+        fs::create_dir_all(Path::new(self.source_dir()).join(self.output_dir())).unwrap();
 
         let filepath = self.filepath(ctx);
         let args = [
