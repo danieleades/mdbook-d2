@@ -13,7 +13,7 @@ fn library() -> PathBuf {
 
 pub struct TestBook {
     _temp_dir: TempDir,
-    book: MDBook,
+    pub book: MDBook,
 }
 
 impl TestBook {
