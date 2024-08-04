@@ -8,28 +8,14 @@ use anyhow::bail;
 use mdbook::book::SectionNumber;
 use mdbook::preprocess::PreprocessorContext;
 use pulldown_cmark::{CowStr, Event, LinkType, Tag, TagEnd};
-use serde::Deserialize;
 
 use crate::config::Config;
 
-#[derive(Deserialize)]
-#[serde(from = "Config")]
 pub struct Backend {
     path: PathBuf,
     output_dir: PathBuf,
     source_dir: PathBuf,
     layout: String,
-}
-
-impl From<Config> for Backend {
-    fn from(config: Config) -> Self {
-        Self {
-            path: config.path,
-            output_dir: config.output_dir,
-            source_dir: PathBuf::from("src"),
-            layout: config.layout,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -65,11 +51,25 @@ fn filename(ctx: &RenderContext) -> String {
 }
 
 impl Backend {
+    pub fn new(config: Config, source_dir: PathBuf) -> Self {
+        Self {
+            path: config.path,
+            output_dir: config.output_dir,
+            layout: config.layout,
+            source_dir,
+        }
+    }
+
     pub fn from_context(ctx: &PreprocessorContext) -> Self {
-        let value: toml::Value = ctx.config.get_preprocessor("d2").unwrap().clone().into();
-        let mut backend: Backend = value.try_into().unwrap();
-        backend.source_dir = ctx.config.book.src.clone();
-        backend
+        let toml_value: toml::Value = ctx
+            .config
+            .get_preprocessor("d2")
+            .expect("d2 preprocessor config not found")
+            .clone()
+            .into();
+        let config: Config = toml_value.try_into().expect("cannot convert toml config");
+
+        Self::new(config, ctx.config.book.src.clone())
     }
 
     fn output_dir(&self) -> &Path {
