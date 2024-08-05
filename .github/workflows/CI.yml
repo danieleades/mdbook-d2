@@ -14,7 +14,8 @@ jobs:
           - {build: stable, os: ubuntu-latest, rust: stable}
           - {build: nightly, os: ubuntu-latest, rust: nightly}
           - {build: macos, os: macos-latest, rust: stable}
-          - {build: windows, os: windows-latest, rust: stable}
+            # see https://github.com/terrastruct/d2/issues/2044
+#          - {build: windows, os: windows-latest, rust: stable}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
