@@ -18,7 +18,7 @@ mdbook = "0.4.40"
 pulldown-cmark = "0.11"
 pulldown-cmark-to-cmark = "15.0"
 serde = { version = "1.0.204", features = ["derive"] }
-toml = "0.5"
+toml = "0.8"
 anyhow = "1.0.86"
 
 [dev-dependencies]
