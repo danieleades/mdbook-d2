@@ -11,22 +11,33 @@ use pulldown_cmark::{CowStr, Event, LinkType, Tag, TagEnd};
 
 use crate::config::Config;
 
+/// Represents the backend for processing D2 diagrams
 pub struct Backend {
+    /// Absolute path to the D2 binary
     path: PathBuf,
+    /// Relative path to the output directory for generated diagrams
     output_dir: PathBuf,
+    /// Absolute path to the source directory of the book
     source_dir: PathBuf,
+    /// Layout engine to use for D2 diagrams
     layout: String,
 }
 
+/// Context for rendering a specific diagram
 #[derive(Debug, Clone, Copy)]
 pub struct RenderContext<'a> {
+    /// Relative path to the current chapter file
     path: &'a Path,
+    /// Name of the current chapter
     chapter: &'a str,
+    /// Section number of the current chapter
     section: Option<&'a SectionNumber>,
+    /// Index of the current diagram within the chapter
     diagram_index: usize,
 }
 
 impl<'a> RenderContext<'a> {
+    /// Creates a new RenderContext
     pub const fn new(
         path: &'a Path,
         chapter: &'a str,
@@ -42,6 +53,9 @@ impl<'a> RenderContext<'a> {
     }
 }
 
+/// Generates a filename for a diagram based on its context
+///
+/// Returns a relative path for the diagram file
 fn filename(ctx: &RenderContext) -> String {
     format!(
         "{}{}.svg",
@@ -51,6 +65,11 @@ fn filename(ctx: &RenderContext) -> String {
 }
 
 impl Backend {
+    /// Creates a new Backend instance
+    ///
+    /// # Arguments
+    /// * `config` - Configuration for the D2 preprocessor
+    /// * `source_dir` - Absolute path to the book's source directory
     pub fn new(config: Config, source_dir: PathBuf) -> Self {
         Self {
             path: config.path,
@@ -60,6 +79,10 @@ impl Backend {
         }
     }
 
+    /// Creates a Backend instance from a PreprocessorContext
+    ///
+    /// # Arguments
+    /// * `ctx` - The preprocessor context
     pub fn from_context(ctx: &PreprocessorContext) -> Self {
         let toml_value: toml::Value = ctx
             .config
@@ -72,23 +95,38 @@ impl Backend {
         Self::new(config, ctx.config.book.src.clone())
     }
 
+    /// Returns the relative path to the output directory
     fn output_dir(&self) -> &Path {
         &self.output_dir
     }
 
+    /// Returns the absolute path to the source directory
     fn source_dir(&self) -> &Path {
         &self.source_dir
     }
 
+    /// Constructs the absolute file path for a diagram
+    ///
+    /// # Arguments
+    /// * `ctx` - The render context for the diagram
     fn filepath(&self, ctx: &RenderContext) -> PathBuf {
         Path::new(self.source_dir()).join(self.relative_file_path(ctx))
     }
 
+    /// Constructs the relative file path for a diagram
+    ///
+    /// # Arguments
+    /// * `ctx` - The render context for the diagram
     fn relative_file_path(&self, ctx: &RenderContext) -> PathBuf {
         let filename = filename(ctx);
         self.output_dir().join(filename)
     }
 
+    /// Renders a D2 diagram and returns the appropriate markdown events
+    ///
+    /// # Arguments
+    /// * `ctx` - The render context for the diagram
+    /// * `content` - The D2 diagram content
     pub fn render(
         &self,
         ctx: &RenderContext,
@@ -125,6 +163,12 @@ impl Backend {
         ])
     }
 
+    /// Runs the D2 process to generate a diagram
+    ///
+    /// # Arguments
+    /// * `ctx` - The render context for the diagram
+    /// * `content` - The D2 diagram content
+    /// * `args` - Additional arguments for the D2 process
     fn run_process<I, S>(
         &self,
         ctx: &RenderContext,
