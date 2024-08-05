@@ -34,17 +34,18 @@ impl Preprocessor for D2 {
 
         book.for_each_mut(|section| {
             if let BookItem::Chapter(chapter) = section {
-                let events = process_events(
+                let events: Vec<_> = process_events(
                     &backend,
                     chapter,
                     Parser::new_ext(&chapter.content, Options::all()),
-                );
+                )
+                .collect();
 
                 // create a buffer in which we can place the markdown
                 let mut buf = String::with_capacity(chapter.content.len() + 128);
 
                 // convert it back to markdown and replace the original chapter's content
-                cmark(events, &mut buf).unwrap();
+                cmark(events.iter(), &mut buf).unwrap();
                 chapter.content = buf;
             }
         });
