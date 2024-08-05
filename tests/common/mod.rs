@@ -19,12 +19,12 @@ fn library() -> PathBuf {
 pub struct TestBook {
     /// Temporary directory where the book is copied and built
     _temp_dir: TempDir,
-    /// The MDBook instance
+    /// The [`MDBook`] instance
     pub book: MDBook,
 }
 
 impl TestBook {
-    /// Creates a new TestBook instance
+    /// Creates a new [`TestBook`] instance
     ///
     /// # Arguments
     ///
@@ -32,7 +32,7 @@ impl TestBook {
     ///
     /// # Returns
     ///
-    /// A Result containing the TestBook instance or an error
+    /// A Result containing the [`TestBook`] instance or an error
     pub fn new(book: &str) -> anyhow::Result<Self> {
         let temp_dir = tempfile::tempdir().context("unable to create temporary directory")?;
 
@@ -89,7 +89,7 @@ impl TestBook {
 ///
 /// # Returns
 ///
-/// An io::Result indicating success or failure of the copy operation
+/// An [`io::Result`] indicating success or failure of the copy operation
 fn recursive_copy(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
     fs::create_dir_all(&dst)?;
     for entry in fs::read_dir(src)? {
