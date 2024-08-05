@@ -12,10 +12,6 @@ mod default {
     pub fn output_dir() -> PathBuf {
         PathBuf::from("d2")
     }
-
-    pub fn layout() -> String {
-        String::from("dagre")
-    }
 }
 
 #[derive(Deserialize, PartialEq, Eq, Debug)]
@@ -28,15 +24,14 @@ pub struct Config {
     #[serde(default = "default::output_dir")]
     pub output_dir: PathBuf,
 
-    #[serde(default = "default::layout")]
-    pub layout: String,
+    pub layout: Option<String>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             path: default::bin_path(),
-            layout: default::layout(),
+            layout: None,
             output_dir: default::output_dir(),
         }
     }
@@ -72,7 +67,7 @@ output-dir = "d2-img"
 "#
     => Config {
         path: PathBuf::from("/custom/bin/d2"),
-        layout: String::from("elk"),
+        layout: Some(String::from("elk")),
         output_dir: PathBuf::from("d2-img"),
     }
         ; "custom"

@@ -20,7 +20,7 @@ pub struct Backend {
     /// Absolute path to the source directory of the book
     source_dir: PathBuf,
     /// Layout engine to use for D2 diagrams
-    layout: String,
+    layout: Option<String>,
 }
 
 /// Context for rendering a specific diagram
@@ -130,12 +130,16 @@ impl Backend {
         fs::create_dir_all(Path::new(&self.source_dir).join(self.output_dir())).unwrap();
 
         let filepath = self.filepath(ctx);
-        let args = [
-            OsStr::new("--layout"),
-            self.layout.as_ref(),
-            OsStr::new("-"),
-            filepath.as_os_str(),
-        ];
+        let args = if let Some(layout) = &self.layout {
+            vec![
+                OsStr::new("--layout"),
+                layout.as_ref(),
+                OsStr::new("-"),
+                filepath.as_os_str(),
+            ]
+        } else {
+            vec![OsStr::new("-"), filepath.as_os_str()]
+        };
 
         self.run_process(ctx, content, args)?;
 
