@@ -7,16 +7,31 @@ use mdbook::MDBook;
 use mdbook_d2::D2;
 use tempfile::TempDir;
 
+/// Returns the path to the test library directory
 fn library() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/library")
 }
 
+/// Represents a test book for mdbook with D2 preprocessor.
+/// 
+/// Creates a new book root in a temporary directory by cloning a given source directory.
 pub struct TestBook {
+    /// Temporary directory where the book is copied and built
     _temp_dir: TempDir,
+    /// The MDBook instance
     pub book: MDBook,
 }
 
 impl TestBook {
+    /// Creates a new TestBook instance
+    ///
+    /// # Arguments
+    ///
+    /// * `book` - The name of the book in the test library
+    ///
+    /// # Returns
+    ///
+    /// A Result containing the TestBook instance or an error
     pub fn new(book: &str) -> anyhow::Result<Self> {
         let temp_dir = tempfile::tempdir().context("unable to create temporary directory")?;
 
@@ -37,6 +52,15 @@ impl TestBook {
         })
     }
 
+    /// Checks if the first chapter of the book contains a specific snippet
+    ///
+    /// # Arguments
+    ///
+    /// * `snippet` - The text to search for in the chapter
+    ///
+    /// # Returns
+    ///
+    /// A boolean indicating whether the snippet was found
     pub fn chapter1_contains(&self, snippet: &str) -> bool {
         let chapter1 = self
             .book
@@ -53,7 +77,18 @@ impl TestBook {
     }
 }
 
-/// Recursively copy an entire directory tree to somewhere else (a la `cp -r`).
+/// Recursively copies an entire directory tree to another location
+///
+/// This function is similar to the `cp -r` command in Unix-like systems.
+///
+/// # Arguments
+///
+/// * `src` - The source directory path
+/// * `dst` - The destination directory path
+///
+/// # Returns
+///
+/// An io::Result indicating success or failure of the copy operation
 fn recursive_copy(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
     fs::create_dir_all(&dst)?;
     for entry in fs::read_dir(src)? {
