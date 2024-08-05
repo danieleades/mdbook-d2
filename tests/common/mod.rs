@@ -13,8 +13,9 @@ fn library() -> PathBuf {
 }
 
 /// Represents a test book for mdbook with D2 preprocessor.
-/// 
-/// Creates a new book root in a temporary directory by cloning a given source directory.
+///
+/// Creates a new book root in a temporary directory by cloning a given source
+/// directory.
 pub struct TestBook {
     /// Temporary directory where the book is copied and built
     _temp_dir: TempDir,
