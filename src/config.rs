@@ -12,6 +12,10 @@ mod default {
     pub fn output_dir() -> PathBuf {
         PathBuf::from("d2")
     }
+
+    pub const fn inline() -> bool {
+        true
+    }
 }
 
 #[derive(Deserialize, PartialEq, Eq, Debug)]
@@ -25,6 +29,12 @@ pub struct Config {
     pub output_dir: PathBuf,
 
     pub layout: Option<String>,
+
+    /// Whether or not to use inline SVG when building an HTML target
+    ///
+    /// Default is 'true'
+    #[serde(default = "default::inline")]
+    pub inline: bool,
 }
 
 impl Default for Config {
@@ -33,6 +43,7 @@ impl Default for Config {
             path: default::bin_path(),
             layout: None,
             output_dir: default::output_dir(),
+            inline: default::inline(),
         }
     }
 }
@@ -68,6 +79,7 @@ output-dir = "d2-img"
     => Config {
         path: PathBuf::from("/custom/bin/d2"),
         layout: Some(String::from("elk")),
+        inline:true,
         output_dir: PathBuf::from("d2-img"),
     }
         ; "custom"
