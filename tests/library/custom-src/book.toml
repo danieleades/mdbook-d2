@@ -1,0 +1,8 @@
+
+[book]
+title = "Test Book"
+src = "my-src" # the source files will be found in root/my-src instead of root/src
+
+[preprocessor.d2]
+
+[output.html]

@@ -37,7 +37,7 @@ pub struct RenderContext<'a> {
 }
 
 impl<'a> RenderContext<'a> {
-    /// Creates a new RenderContext
+    /// Creates a new [`RenderContext`]
     pub const fn new(
         path: &'a Path,
         chapter: &'a str,
@@ -79,7 +79,7 @@ impl Backend {
         }
     }
 
-    /// Creates a Backend instance from a PreprocessorContext
+    /// Creates a Backend instance from a [`PreprocessorContext`]
     ///
     /// # Arguments
     /// * `ctx` - The preprocessor context
@@ -91,7 +91,7 @@ impl Backend {
             .clone()
             .into();
         let config: Config = toml_value.try_into().expect("cannot convert toml config");
-        let source_dir = ctx.root.join("src");
+        let source_dir = ctx.root.join(&ctx.config.book.src);
 
         Self::new(config, source_dir)
     }
@@ -101,19 +101,12 @@ impl Backend {
         &self.output_dir
     }
 
-    /// Returns the absolute path to the source directory
-    fn source_dir(&self) -> &Path {
-        println!("source dir: {:?}", &self.source_dir);
-        &self.source_dir
-    }
-
     /// Constructs the absolute file path for a diagram
     ///
     /// # Arguments
     /// * `ctx` - The render context for the diagram
     fn filepath(&self, ctx: &RenderContext) -> PathBuf {
-        let filepath = Path::new(self.source_dir()).join(self.relative_file_path(ctx));
-        println!("filepath: {filepath:?}");
+        let filepath = Path::new(&self.source_dir).join(self.relative_file_path(ctx));
         filepath
     }
 
@@ -136,7 +129,7 @@ impl Backend {
         ctx: &RenderContext,
         content: &str,
     ) -> anyhow::Result<Vec<Event<'static>>> {
-        fs::create_dir_all(Path::new(self.source_dir()).join(self.output_dir())).unwrap();
+        fs::create_dir_all(Path::new(&self.source_dir).join(self.output_dir())).unwrap();
 
         let filepath = self.filepath(ctx);
         let args = [
