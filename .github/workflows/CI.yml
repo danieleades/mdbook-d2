@@ -21,6 +21,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
+      - name: Set SHELL environment variable
+        run: echo "SHELL=/usr/bin/bash" >> $GITHUB_ENV
       - name: Install D2
         shell: bash
         run: |
