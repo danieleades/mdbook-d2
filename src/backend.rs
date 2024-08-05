@@ -84,13 +84,11 @@ impl Backend {
     /// # Arguments
     /// * `ctx` - The preprocessor context
     pub fn from_context(ctx: &PreprocessorContext) -> Self {
-        let toml_value: toml::Value = ctx
+        let config: Config = ctx
             .config
-            .get_preprocessor("d2")
-            .expect("d2 preprocessor config not found")
-            .clone()
-            .into();
-        let config: Config = toml_value.try_into().expect("cannot convert toml config");
+            .get_deserialized_opt("preprocessor.d2")
+            .expect("Unable to deserialize d2 preprocessor config")
+            .expect("d2 preprocessor config not found");
         let source_dir = ctx.root.join(&ctx.config.book.src);
 
         Self::new(config, source_dir)
