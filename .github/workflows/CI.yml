@@ -22,6 +22,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
       - name: Install D2
+        shell: bash
         run: |
           curl -fsSL https://d2lang.com/install.sh | sh -s --
           echo "$(which d2)" >> $GITHUB_PATH
