@@ -91,8 +91,9 @@ impl Backend {
             .clone()
             .into();
         let config: Config = toml_value.try_into().expect("cannot convert toml config");
+        let source_dir = ctx.root.join("src");
 
-        Self::new(config, ctx.config.book.src.clone())
+        Self::new(config, source_dir)
     }
 
     /// Returns the relative path to the output directory
@@ -102,6 +103,7 @@ impl Backend {
 
     /// Returns the absolute path to the source directory
     fn source_dir(&self) -> &Path {
+        println!("source dir: {:?}", &self.source_dir);
         &self.source_dir
     }
 
@@ -110,7 +112,9 @@ impl Backend {
     /// # Arguments
     /// * `ctx` - The render context for the diagram
     fn filepath(&self, ctx: &RenderContext) -> PathBuf {
-        Path::new(self.source_dir()).join(self.relative_file_path(ctx))
+        let filepath = Path::new(self.source_dir()).join(self.relative_file_path(ctx));
+        println!("filepath: {filepath:?}");
+        filepath
     }
 
     /// Constructs the relative file path for a diagram
@@ -119,7 +123,7 @@ impl Backend {
     /// * `ctx` - The render context for the diagram
     fn relative_file_path(&self, ctx: &RenderContext) -> PathBuf {
         let filename = filename(ctx);
-        self.output_dir().join(filename)
+        self.output_dir.join(filename)
     }
 
     /// Renders a D2 diagram and returns the appropriate markdown events
