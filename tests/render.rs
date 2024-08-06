@@ -6,10 +6,10 @@ use common::TestBook;
 fn inline() {
     let test_book = TestBook::new("inline").expect("couldn't create book");
 
-    assert!(test_book.chapter1_contains(r#"<svg"#));
-    assert!(test_book.chapter1_contains(r#"</svg>"#));
-    assert!(test_book.chapter1_contains(r#"<rect"#));
-    assert!(test_book.chapter1_contains(r#"</rect>"#));
+    assert!(test_book.chapter1_contains(r"<svg"));
+    assert!(test_book.chapter1_contains(r"</svg>"));
+    assert!(test_book.chapter1_contains(r"<rect"));
+    assert!(test_book.chapter1_contains(r"</rect>"));
 }
 
 #[test]
