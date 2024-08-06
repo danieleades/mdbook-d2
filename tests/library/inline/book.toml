@@ -3,6 +3,6 @@
 title = "Test Book"
 
 [preprocessor.d2]
-inline = false
+inline = true
 
 [output.html]

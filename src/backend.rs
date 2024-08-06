@@ -21,6 +21,7 @@ pub struct Backend {
     source_dir: PathBuf,
     /// Layout engine to use for D2 diagrams
     layout: Option<String>,
+    inline: bool,
 }
 
 /// Context for rendering a specific diagram
@@ -75,6 +76,7 @@ impl Backend {
             path: config.path,
             output_dir: config.output_dir,
             layout: config.layout,
+            inline: config.inline,
             source_dir,
         }
     }
@@ -123,6 +125,35 @@ impl Backend {
     /// * `ctx` - The render context for the diagram
     /// * `content` - The D2 diagram content
     pub fn render(
+        &self,
+        ctx: &RenderContext,
+        content: &str,
+    ) -> anyhow::Result<Vec<Event<'static>>> {
+        if self.inline {
+            self.render_inline(ctx, content)
+        } else {
+            self.render_embedded(ctx, content)
+        }
+    }
+
+    fn render_inline(
+        &self,
+        ctx: &RenderContext,
+        content: &str,
+    ) -> anyhow::Result<Vec<Event<'static>>> {
+        let args = if let Some(layout) = &self.layout {
+            vec![OsStr::new("--layout"), layout.as_ref(), OsStr::new("-")]
+        } else {
+            vec![OsStr::new("-")]
+        };
+
+        let diagram = self.run_process(ctx, content, args)?;
+        Ok(vec![Event::Html(
+            format!("\n<pre>{diagram}</pre>\n").into(),
+        )])
+    }
+
+    fn render_embedded(
         &self,
         ctx: &RenderContext,
         content: &str,
