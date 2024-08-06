@@ -79,7 +79,7 @@ output-dir = "d2-img"
     => Config {
         path: PathBuf::from("/custom/bin/d2"),
         layout: Some(String::from("elk")),
-        inline:true,
+        inline: true,
         output_dir: PathBuf::from("d2-img"),
     }
         ; "custom"
