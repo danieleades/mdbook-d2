@@ -4,5 +4,6 @@ title = "Test Book"
 
 [preprocessor.d2]
 inline = true
+layout = "elk"
 
 [output.html]

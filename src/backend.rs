@@ -9,7 +9,7 @@ use mdbook::book::SectionNumber;
 use mdbook::preprocess::PreprocessorContext;
 use pulldown_cmark::{CowStr, Event, LinkType, Tag, TagEnd};
 
-use crate::config::Config;
+use crate::config::{Config, Fonts};
 
 /// Represents the backend for processing D2 diagrams
 pub struct Backend {
@@ -22,6 +22,7 @@ pub struct Backend {
     /// Layout engine to use for D2 diagrams
     layout: Option<String>,
     inline: bool,
+    fonts: Option<Fonts>,
 }
 
 /// Context for rendering a specific diagram
@@ -78,6 +79,7 @@ impl Backend {
             layout: config.layout,
             inline: config.inline,
             source_dir,
+            fonts: config.fonts,
         }
     }
 
@@ -141,12 +143,7 @@ impl Backend {
         ctx: &RenderContext,
         content: &str,
     ) -> anyhow::Result<Vec<Event<'static>>> {
-        let args = if let Some(layout) = &self.layout {
-            vec![OsStr::new("--layout"), layout.as_ref(), OsStr::new("-")]
-        } else {
-            vec![OsStr::new("-")]
-        };
-
+        let args = self.basic_args();
         let diagram = self.run_process(ctx, content, args)?;
         Ok(vec![Event::Html(
             format!("\n<pre>{diagram}</pre>\n").into(),
@@ -159,18 +156,9 @@ impl Backend {
         content: &str,
     ) -> anyhow::Result<Vec<Event<'static>>> {
         fs::create_dir_all(Path::new(&self.source_dir).join(self.output_dir())).unwrap();
-
+        let mut args = self.basic_args();
         let filepath = self.filepath(ctx);
-        let args = if let Some(layout) = &self.layout {
-            vec![
-                OsStr::new("--layout"),
-                layout.as_ref(),
-                OsStr::new("-"),
-                filepath.as_os_str(),
-            ]
-        } else {
-            vec![OsStr::new("-"), filepath.as_os_str()]
-        };
+        args.push(filepath.as_os_str());
 
         self.run_process(ctx, content, args)?;
 
@@ -195,6 +183,26 @@ impl Backend {
             Event::End(TagEnd::Image),
             Event::End(TagEnd::Paragraph),
         ])
+    }
+
+    fn basic_args(&self) -> Vec<&OsStr> {
+        let mut args = vec![];
+
+        if let Some(fonts) = &self.fonts {
+            args.extend([
+                OsStr::new("--font-regular"),
+                fonts.regular.as_os_str(),
+                OsStr::new("--font-italic"),
+                fonts.italic.as_os_str(),
+                OsStr::new("--font-bold"),
+                fonts.bold.as_os_str(),
+            ]);
+        }
+        if let Some(layout) = &self.layout {
+            args.extend([OsStr::new("--layout"), layout.as_ref()]);
+        }
+        args.push(OsStr::new("-"));
+        args
     }
 
     /// Runs the D2 process to generate a diagram
