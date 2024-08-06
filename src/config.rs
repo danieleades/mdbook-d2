@@ -19,6 +19,12 @@ mod default {
 }
 
 #[derive(Deserialize, PartialEq, Eq, Debug)]
+pub struct Fonts {
+    pub regular: PathBuf,
+    pub italic: PathBuf,
+    pub bold: PathBuf,
+}
+#[derive(Deserialize, PartialEq, Eq, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
     /// The path to the d2 binary
@@ -35,6 +41,11 @@ pub struct Config {
     /// Default is 'true'
     #[serde(default = "default::inline")]
     pub inline: bool,
+
+    /// Custom font path
+    ///
+    /// Only ttf fonts are valid
+    pub fonts: Option<Fonts>,
 }
 
 impl Default for Config {
@@ -44,6 +55,7 @@ impl Default for Config {
             layout: None,
             output_dir: default::output_dir(),
             inline: default::inline(),
+            fonts: None,
         }
     }
 }
@@ -81,6 +93,7 @@ output-dir = "d2-img"
         layout: Some(String::from("elk")),
         inline: true,
         output_dir: PathBuf::from("d2-img"),
+        fonts: None,
     }
         ; "custom"
     )]

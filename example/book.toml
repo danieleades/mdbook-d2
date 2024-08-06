@@ -3,7 +3,10 @@ title = "Example Book"
 
 [preprocessor.d2]
 command = "cargo run --manifest-path ../Cargo.toml"
+layout = "elk"
 inline = true
+# note that if you wish to customise the font, you MUST provide each of regular, italic, and bold fonts
+# fonts = { regular = "./fonts/Hack-Regular.ttf", italic = "./fonts/Hack-Italic.ttf", bold = "./fonts/Hack-Bold.ttf" }
 
 [output.html]
 
