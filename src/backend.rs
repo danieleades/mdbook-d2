@@ -187,7 +187,7 @@ impl Backend {
                 dest_url: rel_path
                     .to_string_lossy()
                     .to_string()
-                    .replace("\\", "/")
+                    .replace('\\', "/")
                     .into(),
                 title: CowStr::Borrowed(""),
                 id: CowStr::Borrowed(""),
