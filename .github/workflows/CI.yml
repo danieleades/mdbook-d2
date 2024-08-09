@@ -55,3 +55,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo doc --no-deps
+
+  # Automatically merge if it's a Dependabot PR that passes the build
+  dependabot:
+    needs: [test, fmt, clippy, docs]
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Enable auto-merge for Dependabot PRs
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
