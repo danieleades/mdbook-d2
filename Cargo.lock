@@ -963,7 +963,7 @@ dependencies = [
  "anyhow",
  "clap",
  "mdbook",
- "pulldown-cmark 0.12.0",
+ "pulldown-cmark 0.12.1",
  "pulldown-cmark-to-cmark",
  "semver",
  "serde",
@@ -1322,9 +1322,9 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.12.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d31cbfcd94884c3a67ec210c83efb06cb43674043458b0ad59f6947f8462c23"
+checksum = "666f0f59e259aea2d72e6012290c09877a780935cc3c18b1ceded41f3890d59c"
 dependencies = [
  "bitflags 2.6.0",
  "getopts",
@@ -1351,7 +1351,7 @@ version = "16.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "171b9687038fb417937aee4ce1d0a269897091f05be16660a1e45777533c54b9"
 dependencies = [
- "pulldown-cmark 0.12.0",
+ "pulldown-cmark 0.12.1",
 ]
 
 [[package]]
