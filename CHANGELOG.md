@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [0.3.2](https://github.com/danieleades/mdbook-d2/compare/v0.3.1...v0.3.2) - 2024-09-17
+
+### Other
+
+- *(ci)* group patch updates to reduce PR noise ([#106](https://github.com/danieleades/mdbook-d2/pull/106))
+- *(deps)* bump anyhow from 1.0.86 to 1.0.89 ([#105](https://github.com/danieleades/mdbook-d2/pull/105))
+- *(deps)* bump serde_json from 1.0.127 to 1.0.128 ([#100](https://github.com/danieleades/mdbook-d2/pull/100))
+- *(deps)* bump pulldown-cmark-to-cmark from 16.0.1 to 17.0.0 ([#103](https://github.com/danieleades/mdbook-d2/pull/103))
+- *(deps)* bump pulldown-cmark from 0.12.0 to 0.12.1 ([#104](https://github.com/danieleades/mdbook-d2/pull/104))
+- *(deps)* bump serde from 1.0.209 to 1.0.210 ([#102](https://github.com/danieleades/mdbook-d2/pull/102))
+- *(deps)* bump clap from 4.5.16 to 4.5.17 ([#101](https://github.com/danieleades/mdbook-d2/pull/101))
+- *(deps)* bump serde from 1.0.208 to 1.0.209 ([#99](https://github.com/danieleades/mdbook-d2/pull/99))
+
 ## [0.3.1](https://github.com/danieleades/mdbook-d2/compare/v0.3.0...v0.3.1) - 2024-08-20
 
 ### Other
