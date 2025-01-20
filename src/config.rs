@@ -46,6 +46,9 @@ pub struct Config {
     ///
     /// Only ttf fonts are valid
     pub fonts: Option<Fonts>,
+
+    pub theme_id: Option<String>,
+    pub dark_theme_id: Option<String>,
 }
 
 impl Default for Config {
@@ -56,6 +59,8 @@ impl Default for Config {
             output_dir: default::output_dir(),
             inline: default::inline(),
             fonts: None,
+            theme_id: None,
+            dark_theme_id: None,
         }
     }
 }
@@ -94,6 +99,8 @@ output-dir = "d2-img"
         inline: true,
         output_dir: PathBuf::from("d2-img"),
         fonts: None,
+        theme_id: None,
+        dark_theme_id:None,
     }
         ; "custom"
     )]
