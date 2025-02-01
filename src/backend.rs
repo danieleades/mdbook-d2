@@ -163,8 +163,7 @@ impl Backend {
         self.run_process(ctx, content, args)?;
 
         let depth = ctx.path.ancestors().count() - 2;
-        let rel_path: PathBuf = std::iter::repeat(Path::new(".."))
-            .take(depth)
+        let rel_path: PathBuf = std::iter::repeat_n(Path::new(".."), depth)
             .collect::<PathBuf>()
             .join(self.relative_file_path(ctx));
 

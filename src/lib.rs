@@ -25,7 +25,7 @@ mod config;
 pub struct D2;
 
 impl Preprocessor for D2 {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "d2"
     }
 
