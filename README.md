@@ -97,3 +97,7 @@ The code block will be replaced with the D2 diagram in the rendered document.
 ## Thanks
 
 The code in this preprocessor is based on that from <https://github.com/matthiasbeyer/mdbook-svgbob2>
+
+---
+
+*Was this useful? [Buy me a coffee](https://github.com/sponsors/danieleades/sponsorships?sponsor=danieleades&preview=true&frequency=recurring&amount=5)*
