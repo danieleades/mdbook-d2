@@ -56,9 +56,23 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo doc --no-deps
 
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Get MSRV from Cargo.toml
+        run: |
+          MSRV=$(grep 'rust-version' Cargo.toml | sed 's/.*= *"\(.*\)".*/\1/')
+          echo "MSRV=$MSRV" >> $GITHUB_ENV
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.MSRV }}
+      - uses: taiki-e/install-action@cargo-no-dev-deps
+      - run: cargo no-dev-deps check --all
+
   # Automatically merge if it's a Dependabot PR that passes the build
   dependabot:
-    needs: [test, fmt, clippy, docs]
+    needs: [test, fmt, clippy, docs, msrv]
     permissions:
       contents: write
       pull-requests: write
