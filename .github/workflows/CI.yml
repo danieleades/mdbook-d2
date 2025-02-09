@@ -70,9 +70,15 @@ jobs:
       - uses: taiki-e/install-action@cargo-no-dev-deps
       - run: cargo no-dev-deps check --all
 
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: EmbarkStudios/cargo-deny-action@v1
+
   # Automatically merge if it's a Dependabot PR that passes the build
   dependabot:
-    needs: [test, fmt, clippy, docs, msrv]
+    needs: [test, fmt, clippy, docs, msrv, audit]
     permissions:
       contents: write
       pull-requests: write
