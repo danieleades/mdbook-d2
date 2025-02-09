@@ -8,6 +8,7 @@ license = "MIT"
 keywords = ["mdbook", "d2", "markdown", "commonmark"]
 categories = ["command-line-utilities", "text-processing", "visualization"]
 repository = "https://github.com/danieleades/mdbook-d2"
+rust-version = "1.82.0"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
