@@ -23,6 +23,8 @@ pub struct Backend {
     layout: Option<String>,
     inline: bool,
     fonts: Option<Fonts>,
+    theme_id: Option<String>,
+    dark_theme_id: Option<String>,
 }
 
 /// Context for rendering a specific diagram
@@ -80,6 +82,8 @@ impl Backend {
             inline: config.inline,
             source_dir,
             fonts: config.fonts,
+            theme_id: config.theme_id,
+            dark_theme_id: config.dark_theme_id,
         }
     }
 
@@ -199,6 +203,12 @@ impl Backend {
         }
         if let Some(layout) = &self.layout {
             args.extend([OsStr::new("--layout"), layout.as_ref()]);
+        }
+        if let Some(theme_id) = &self.theme_id {
+            args.extend([OsStr::new("--theme"), theme_id.as_ref()])
+        }
+        if let Some(dark_theme_id) = &self.dark_theme_id {
+            args.extend([OsStr::new("--dark-theme"), dark_theme_id.as_ref()])
         }
         args.push(OsStr::new("-"));
         args
