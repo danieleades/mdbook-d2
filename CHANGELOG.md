@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [0.3.3](https://github.com/danieleades/mdbook-d2/compare/v0.3.2...v0.3.3) - 2025-02-18
+
+### Added
+
+- add --theme and --dark-theme to CLI args (#124)
+
+### Other
+
+- *(deps)* bump pulldown-cmark from 0.12.2 to 0.13.0 (#131)
+- *(deps)* bump tempfile from 3.16.0 to 3.17.0 (#133)
+
 ## [0.3.2](https://github.com/danieleades/mdbook-d2/compare/v0.3.1...v0.3.2) - 2025-02-09
 
 ### Other
