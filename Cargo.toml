@@ -15,13 +15,13 @@ clap = { version = "4.5", features = ["derive"] }
 serde_json = "1.0"
 semver = "1.0"
 
-mdbook = "0.4.44"
+mdbook = "0.4.45"
 pulldown-cmark = "0.13"
 pulldown-cmark-to-cmark = "21.0.0"
-serde = { version = "1.0.217", features = ["derive"] }
-anyhow = "1.0.95"
+serde = { version = "1.0.218", features = ["derive"] }
+anyhow = "1.0.96"
 
 [dev-dependencies]
-tempfile = "3.17.0"
+tempfile = "3.17.1"
 test-case = "3.1.0"
 toml = "0.8.19"
