@@ -91,13 +91,11 @@ fn process_events<'a>(
                     chapter.number.as_ref(),
                     diagram_index,
                 );
-                match backend.render(&render_context, &diagram) {
-                    Ok(events) => events,
-                    Err(e) => {
-                        eprintln!("{e}");
-                        vec![]
-                    }
-                }
+                backend.render(&render_context, &diagram).unwrap_or_else(|e| {
+                    // if we cannot render the diagram, print the error and return an empty block
+                    eprintln!("{e}");
+                    vec![]
+                })
             }
             // if nothing matches, change nothing
             _ => vec![event],

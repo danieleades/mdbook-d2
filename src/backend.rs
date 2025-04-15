@@ -205,10 +205,10 @@ impl Backend {
             args.extend([OsStr::new("--layout"), layout.as_ref()]);
         }
         if let Some(theme_id) = &self.theme_id {
-            args.extend([OsStr::new("--theme"), theme_id.as_ref()])
+            args.extend([OsStr::new("--theme"), theme_id.as_ref()]);
         }
         if let Some(dark_theme_id) = &self.dark_theme_id {
-            args.extend([OsStr::new("--dark-theme"), dark_theme_id.as_ref()])
+            args.extend([OsStr::new("--dark-theme"), dark_theme_id.as_ref()]);
         }
         args.push(OsStr::new("-"));
         args
