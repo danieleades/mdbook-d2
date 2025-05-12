@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## [0.3.4](https://github.com/danieleades/mdbook-d2/compare/v0.3.3...v0.3.4) - 2025-05-12
+
+### Fixed
+
+- *(security)* update dependencies to address tokio security advisory ([#139](https://github.com/danieleades/mdbook-d2/pull/139))
+
+### Other
+
+- *(deps)* bump the patch-updates group with 2 updates ([#145](https://github.com/danieleades/mdbook-d2/pull/145))
+- *(deps)* bump EmbarkStudios/cargo-deny-action from 1 to 2 ([#144](https://github.com/danieleades/mdbook-d2/pull/144))
+- *(deps)* bump tempfile from 3.19.1 to 3.20.0 ([#143](https://github.com/danieleades/mdbook-d2/pull/143))
+- *(deps)* bump the patch-updates group with 2 updates ([#141](https://github.com/danieleades/mdbook-d2/pull/141))
+- address lints ([#138](https://github.com/danieleades/mdbook-d2/pull/138))
+- *(deps)* bump the patch-updates group with 7 updates ([#137](https://github.com/danieleades/mdbook-d2/pull/137))
+- *(deps)* bump tempfile from 3.18.0 to 3.19.0 ([#136](https://github.com/danieleades/mdbook-d2/pull/136))
+- *(deps)* bump tempfile from 3.17.1 to 3.18.0 ([#135](https://github.com/danieleades/mdbook-d2/pull/135))
+- *(deps)* bump the patch-updates group with 6 updates ([#134](https://github.com/danieleades/mdbook-d2/pull/134))
+
 ## [0.3.3](https://github.com/danieleades/mdbook-d2/compare/v0.3.2...v0.3.3) - 2025-02-18
 
 ### Added
