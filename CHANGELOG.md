@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.3.5](https://github.com/danieleades/mdbook-d2/compare/v0.3.4...v0.3.5) - 2025-06-24
+
+### Other
+
+- *(ci)* build and publish binaries ([#147](https://github.com/danieleades/mdbook-d2/pull/147))
+- *(deps)* bump the patch-updates group with 2 updates ([#146](https://github.com/danieleades/mdbook-d2/pull/146))
+
 ## [0.3.4](https://github.com/danieleades/mdbook-d2/compare/v0.3.3...v0.3.4) - 2025-05-12
 
 ### Fixed
