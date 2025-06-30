@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [0.3.6](https://github.com/danieleades/mdbook-d2/compare/v0.3.5...v0.3.6) - 2025-06-30
+
+### Fixed
+
+- *(ci)* update token used by release-plz to allow triggering downstream jobs ([#149](https://github.com/danieleades/mdbook-d2/pull/149))
+
 ## [0.3.5](https://github.com/danieleades/mdbook-d2/compare/v0.3.4...v0.3.5) - 2025-06-24
 
 ### Other
