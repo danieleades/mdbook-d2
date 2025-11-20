@@ -1,10 +1,12 @@
-use std::fs::{self, File};
-use std::io::{self, Read};
-use std::path::{Path, PathBuf};
+use std::{
+    fs::{self, File},
+    io::{self, Read},
+    path::{Path, PathBuf},
+};
 
 use anyhow::Context;
-use mdbook::MDBook;
 use mdbook_d2::D2;
+use mdbook_driver::MDBook;
 use tempfile::TempDir;
 
 /// Returns the path to the test library directory
@@ -68,7 +70,6 @@ impl TestBook {
             .root
             .join(&self.book.config.build.build_dir)
             .join("chapter1.html");
-        dbg!(&chapter1);
         let mut content = String::new();
         File::open(chapter1)
             .expect("couldn't read chapter1.html")

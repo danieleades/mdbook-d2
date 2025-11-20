@@ -1,12 +1,13 @@
-use std::ffi::OsStr;
-use std::fs;
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::{
+    ffi::OsStr,
+    fs,
+    io::Write,
+    path::{Path, PathBuf},
+    process::{Command, Stdio},
+};
 
 use anyhow::bail;
-use mdbook::book::SectionNumber;
-use mdbook::preprocess::PreprocessorContext;
+use mdbook_preprocessor::{book::SectionNumber, PreprocessorContext};
 use pulldown_cmark::{CowStr, Event, LinkType, Tag, TagEnd};
 
 use crate::config::{Config, Fonts};
@@ -94,7 +95,7 @@ impl Backend {
     pub fn from_context(ctx: &PreprocessorContext) -> Self {
         let config: Config = ctx
             .config
-            .get_deserialized_opt("preprocessor.d2")
+            .get("preprocessor.d2")
             .expect("Unable to deserialize d2 preprocessor config")
             .expect("d2 preprocessor config not found");
         let source_dir = ctx.root.join(&ctx.config.book.src);

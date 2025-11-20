@@ -8,10 +8,11 @@
 )]
 #![warn(clippy::pedantic, clippy::nursery)]
 
-use mdbook::book::{Book, Chapter};
-use mdbook::errors::Error;
-use mdbook::preprocess::{Preprocessor, PreprocessorContext};
-use mdbook::BookItem;
+use mdbook_preprocessor::{
+    book::{Book, BookItem, Chapter},
+    errors::Error,
+    Preprocessor, PreprocessorContext,
+};
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd};
 use pulldown_cmark_to_cmark::cmark;
 
