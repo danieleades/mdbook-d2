@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## [0.3.7](https://github.com/danieleades/mdbook-d2/compare/v0.3.6...v0.3.7) - 2025-11-20
+
+### Added
+
+- update to mdbook 0.5 ([#165](https://github.com/danieleades/mdbook-d2/pull/165))
+
+### Other
+
+- *(deps)* bump tempfile from 3.21.0 to 3.22.0 ([#158](https://github.com/danieleades/mdbook-d2/pull/158))
+- *(deps)* bump tempfile from 3.20.0 to 3.21.0 ([#156](https://github.com/danieleades/mdbook-d2/pull/156))
+- *(deps)* bump amannn/action-semantic-pull-request from 5 to 6 ([#155](https://github.com/danieleades/mdbook-d2/pull/155))
+- *(deps)* bump actions/checkout from 4 to 5 ([#154](https://github.com/danieleades/mdbook-d2/pull/154))
+- *(deps)* bump toml from 0.8.23 to 0.9.0 ([#152](https://github.com/danieleades/mdbook-d2/pull/152))
+- *(deps)* bump the patch-updates group with 2 updates ([#151](https://github.com/danieleades/mdbook-d2/pull/151))
+
 ## [0.3.6](https://github.com/danieleades/mdbook-d2/compare/v0.3.5...v0.3.6) - 2025-06-30
 
 ### Fixed
