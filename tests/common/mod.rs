@@ -1,9 +1,11 @@
-use std::fs::{self, File};
-use std::io::{self, Read};
-use std::path::{Path, PathBuf};
+use std::{
+    fs::{self, File},
+    io::{self, Read},
+    path::{Path, PathBuf},
+};
 
 use anyhow::Context;
-use mdbook::MDBook;
+use mdbook_driver::MDBook;
 use mdbook_d2::D2;
 use tempfile::TempDir;
 
