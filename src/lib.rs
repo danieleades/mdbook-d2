@@ -14,7 +14,7 @@ use mdbook_preprocessor::{
     Preprocessor, PreprocessorContext,
 };
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd};
-use pulldown_cmark_to_cmark::cmark;
+use pulldown_cmark_to_cmark::{calculate_code_block_token_count, cmark_with_options};
 
 mod backend;
 use backend::{Backend, RenderContext};
@@ -35,17 +35,31 @@ impl Preprocessor for D2 {
 
         book.for_each_mut(|section| {
             if let BookItem::Chapter(chapter) = section {
-                let events = process_events(
+                let events: Vec<_> = process_events(
                     &backend,
                     chapter,
                     Parser::new_ext(&chapter.content, Options::all()),
-                );
+                )
+                .collect();
+
+                // Determine the minimum number of backticks needed for code blocks.
+                // Use 3 (the CommonMark default) unless nested code blocks require more.
+                // This preserves the original markdown structure while correctly handling
+                // code blocks that contain other code block examples.
+                // See: https://github.com/danieleades/mdbook-d2/issues/170
+                let code_block_token_count =
+                    calculate_code_block_token_count(events.iter()).unwrap_or(3);
+
+                let options = pulldown_cmark_to_cmark::Options {
+                    code_block_token_count,
+                    ..Default::default()
+                };
 
                 // create a buffer in which we can place the markdown
                 let mut buf = String::with_capacity(chapter.content.len() + 128);
 
                 // convert it back to markdown and replace the original chapter's content
-                cmark(events, &mut buf).unwrap();
+                cmark_with_options(events.into_iter(), &mut buf, options).unwrap();
                 chapter.content = buf;
             }
         });
@@ -105,4 +119,104 @@ fn process_events<'a>(
             _ => vec![event],
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Helper to round-trip markdown like the preprocessor does.
+    fn round_trip_markdown(input: &str) -> String {
+        let events: Vec<_> = Parser::new_ext(input, Options::all()).collect();
+        let code_block_token_count = calculate_code_block_token_count(events.iter()).unwrap_or(3);
+        let options = pulldown_cmark_to_cmark::Options {
+            code_block_token_count,
+            ..Default::default()
+        };
+        let mut output = String::new();
+        cmark_with_options(events.into_iter(), &mut output, options).unwrap();
+        output
+    }
+
+    /// Tests that code blocks preserve 3 backticks after round-trip conversion.
+    ///
+    /// This is a regression test for <https://github.com/danieleades/mdbook-d2/issues/170>.
+    /// When using the default pulldown-cmark-to-cmark options, code blocks
+    /// would be converted to use 4 backticks instead of 3, causing issues
+    /// with other preprocessors.
+    #[test]
+    fn code_blocks_preserve_backticks() {
+        let input = "```rust\nfn main() {}\n```\n";
+        let output = round_trip_markdown(input);
+
+        assert!(
+            output.contains("```rust"),
+            "expected 3 backticks, got: {output}"
+        );
+        assert!(
+            !output.contains("````"),
+            "should not have 4 backticks: {output}"
+        );
+    }
+
+    #[test]
+    fn multiple_code_blocks_preserve_backticks() {
+        let input = r#"# Title
+
+```rust
+fn main() {}
+```
+
+Some text.
+
+```python
+print("hello")
+```
+"#;
+
+        let output = round_trip_markdown(input);
+
+        // Count occurrences of ``` (but not ````)
+        let three_backticks = output.matches("```").count();
+        let four_backticks = output.matches("````").count();
+
+        assert_eq!(
+            three_backticks, 4,
+            "expected 4 occurrences of 3 backticks (2 code blocks × 2), got: {output}"
+        );
+        assert_eq!(
+            four_backticks, 0,
+            "should not have any 4 backticks: {output}"
+        );
+    }
+
+    /// Test that code blocks containing backticks are properly escaped with
+    /// more backticks.
+    #[test]
+    fn nested_code_blocks_escaped_correctly() {
+        // A code block containing a literal 3-backtick code block example
+        let input = r"Here's how to write a code block:
+
+````markdown
+```rust
+fn main() {}
+```
+````
+
+That's it!
+";
+
+        let output = round_trip_markdown(input);
+
+        // The outer code block should still use 4 backticks to escape the inner 3
+        assert!(
+            output.contains("````"),
+            "should have 4 backticks to escape nested block: {output}"
+        );
+        // The inner code block should be preserved as content
+        assert!(
+            output.contains("```rust"),
+            "inner code block should be preserved: {output}"
+        );
+    }
 }
