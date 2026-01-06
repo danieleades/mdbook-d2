@@ -47,8 +47,8 @@ impl Preprocessor for D2 {
                 // This preserves the original markdown structure while correctly handling
                 // code blocks that contain other code block examples.
                 // See: https://github.com/danieleades/mdbook-d2/issues/170
-                let code_block_token_count = calculate_code_block_token_count(events.iter())
-                    .unwrap_or(3);
+                let code_block_token_count =
+                    calculate_code_block_token_count(events.iter()).unwrap_or(3);
 
                 let options = pulldown_cmark_to_cmark::Options {
                     code_block_token_count,
@@ -128,8 +128,7 @@ mod tests {
     /// Helper to round-trip markdown like the preprocessor does.
     fn round_trip_markdown(input: &str) -> String {
         let events: Vec<_> = Parser::new_ext(input, Options::all()).collect();
-        let code_block_token_count =
-            calculate_code_block_token_count(events.iter()).unwrap_or(3);
+        let code_block_token_count = calculate_code_block_token_count(events.iter()).unwrap_or(3);
         let options = pulldown_cmark_to_cmark::Options {
             code_block_token_count,
             ..Default::default()
@@ -142,8 +141,9 @@ mod tests {
     /// Tests that code blocks preserve 3 backticks after round-trip conversion.
     ///
     /// This is a regression test for <https://github.com/danieleades/mdbook-d2/issues/170>.
-    /// When using the default pulldown-cmark-to-cmark options, code blocks would be
-    /// converted to use 4 backticks instead of 3, causing issues with other preprocessors.
+    /// When using the default pulldown-cmark-to-cmark options, code blocks
+    /// would be converted to use 4 backticks instead of 3, causing issues
+    /// with other preprocessors.
     #[test]
     fn code_blocks_preserve_backticks() {
         let input = "```rust\nfn main() {}\n```\n";
@@ -190,7 +190,8 @@ print("hello")
         );
     }
 
-    /// Test that code blocks containing backticks are properly escaped with more backticks.
+    /// Test that code blocks containing backticks are properly escaped with
+    /// more backticks.
     #[test]
     fn nested_code_blocks_escaped_correctly() {
         // A code block containing a literal 3-backtick code block example
