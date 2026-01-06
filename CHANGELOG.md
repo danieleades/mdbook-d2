@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [0.3.8](https://github.com/danieleades/mdbook-d2/compare/v0.3.7...v0.3.8) - 2026-01-06
+
+### Fixed
+
+- default to 3 backticks for fenced code blocks ([#174](https://github.com/danieleades/mdbook-d2/pull/174))
+
+### Other
+
+- *(deps)* bump the patch-updates group with 4 updates ([#173](https://github.com/danieleades/mdbook-d2/pull/173))
+- *(deps)* bump tempfile from 3.23.0 to 3.24.0 ([#172](https://github.com/danieleades/mdbook-d2/pull/172))
+- *(deps)* bump pulldown-cmark-to-cmark from 21.1.0 to 22.0.0 ([#171](https://github.com/danieleades/mdbook-d2/pull/171))
+- *(deps)* bump actions/checkout from 5 to 6 ([#168](https://github.com/danieleades/mdbook-d2/pull/168))
+
 ## [0.3.7](https://github.com/danieleades/mdbook-d2/compare/v0.3.6...v0.3.7) - 2025-11-20
 
 ### Added
