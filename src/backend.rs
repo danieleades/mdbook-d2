@@ -103,11 +103,6 @@ impl Backend {
         Self::new(config, source_dir)
     }
 
-    /// Returns the relative path to the output directory
-    fn output_dir(&self) -> &Path {
-        &self.output_dir
-    }
-
     /// Constructs the absolute file path for a diagram
     ///
     /// # Arguments
@@ -143,13 +138,28 @@ impl Backend {
         }
     }
 
+    fn compile(
+        &self,
+        ctx: &RenderContext,
+        content: &str,
+        output_path: &Path,
+    ) -> anyhow::Result<()> {
+        fs::create_dir_all(output_path.parent().expect("output path has no parent"))?;
+        let mut args = self.basic_args();
+        args.push(output_path.as_os_str());
+        self.run_process(ctx, content, args)?;
+        Ok(())
+    }
+
     fn render_inline(
         &self,
         ctx: &RenderContext,
         content: &str,
     ) -> anyhow::Result<Vec<Event<'static>>> {
-        let args = self.basic_args();
-        let diagram = self.run_process(ctx, content, args)?;
+        let tmp_dir = tempfile::tempdir()?;
+        let output_path = tmp_dir.path().join("output.svg");
+        self.compile(ctx, content, &output_path)?;
+        let diagram = fs::read_to_string(&output_path)?;
         Ok(vec![Event::Html(
             format!("\n<pre>{diagram}</pre>\n").into(),
         )])
@@ -160,12 +170,8 @@ impl Backend {
         ctx: &RenderContext,
         content: &str,
     ) -> anyhow::Result<Vec<Event<'static>>> {
-        fs::create_dir_all(Path::new(&self.source_dir).join(self.output_dir())).unwrap();
-        let mut args = self.basic_args();
         let filepath = self.filepath(ctx);
-        args.push(filepath.as_os_str());
-
-        self.run_process(ctx, content, args)?;
+        self.compile(ctx, content, &filepath)?;
 
         let depth = ctx.path.ancestors().count() - 2;
         let rel_path: PathBuf = std::iter::repeat_n(Path::new(".."), depth)

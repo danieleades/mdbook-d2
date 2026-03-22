@@ -30,6 +30,14 @@ fn simple_output_dir() {
 }
 
 #[test]
+fn scenarios() {
+    let test_book = TestBook::new("scenarios").expect("couldn't create book");
+
+    assert!(test_book.chapter1_contains(r"<svg"));
+    assert!(test_book.chapter1_contains(r"</svg>"));
+}
+
+#[test]
 fn custom_src() {
     let test_book = TestBook::new("custom-src").expect("couldn't create book");
 
