@@ -69,6 +69,20 @@ fn filename(ctx: &RenderContext) -> String {
     )
 }
 
+/// For multiboard D2 output (e.g. diagrams with scenarios), D2 creates a
+/// directory named after the requested output path (without the `.svg`
+/// extension) containing `index.svg` and one `.svg` per board.
+///
+/// Returns the path to the actual SVG file to read or reference.
+fn resolve_output_path(requested: &Path) -> PathBuf {
+    let index = requested.with_extension("").join("index.svg");
+    if index.exists() {
+        index
+    } else {
+        requested.to_path_buf()
+    }
+}
+
 impl Backend {
     /// Creates a new Backend instance
     ///
@@ -108,8 +122,7 @@ impl Backend {
     /// # Arguments
     /// * `ctx` - The render context for the diagram
     fn filepath(&self, ctx: &RenderContext) -> PathBuf {
-        let filepath = Path::new(&self.source_dir).join(self.relative_file_path(ctx));
-        filepath
+        self.source_dir.join(self.relative_file_path(ctx))
     }
 
     /// Constructs the relative file path for a diagram
@@ -159,7 +172,7 @@ impl Backend {
         let tmp_dir = tempfile::tempdir()?;
         let output_path = tmp_dir.path().join("output.svg");
         self.compile(ctx, content, &output_path)?;
-        let diagram = fs::read_to_string(&output_path)?;
+        let diagram = fs::read_to_string(resolve_output_path(&output_path))?;
         Ok(vec![Event::Html(
             format!("\n<pre>{diagram}</pre>\n").into(),
         )])
@@ -173,10 +186,15 @@ impl Backend {
         let filepath = self.filepath(ctx);
         self.compile(ctx, content, &filepath)?;
 
+        let actual = resolve_output_path(&filepath);
+        let rel_from_source = actual
+            .strip_prefix(&self.source_dir)
+            .expect("output path is within source dir");
+
         let depth = ctx.path.ancestors().count() - 2;
         let rel_path: PathBuf = std::iter::repeat_n(Path::new(".."), depth)
             .collect::<PathBuf>()
-            .join(self.relative_file_path(ctx));
+            .join(rel_from_source);
 
         Ok(vec![
             Event::Start(Tag::Paragraph),
@@ -227,12 +245,7 @@ impl Backend {
     /// * `ctx` - The render context for the diagram
     /// * `content` - The D2 diagram content
     /// * `args` - Additional arguments for the D2 process
-    fn run_process<I, S>(
-        &self,
-        ctx: &RenderContext,
-        content: &str,
-        args: I,
-    ) -> anyhow::Result<String>
+    fn run_process<I, S>(&self, ctx: &RenderContext, content: &str, args: I) -> anyhow::Result<()>
     where
         I: IntoIterator<Item = S>,
         S: AsRef<OsStr>,
@@ -252,8 +265,7 @@ impl Backend {
 
         let output = child.wait_with_output()?;
         if output.status.success() {
-            let diagram = String::from_utf8_lossy(&output.stdout).to_string();
-            Ok(diagram)
+            Ok(())
         } else {
             let src =
                 format!("\n{}", String::from_utf8_lossy(&output.stderr)).replace('\n', "\n  ");
