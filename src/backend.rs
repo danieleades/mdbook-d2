@@ -83,6 +83,77 @@ fn resolve_output_path(requested: &Path) -> PathBuf {
     }
 }
 
+fn cleanup_output_path(output_path: &Path) -> std::io::Result<()> {
+    if output_path.exists() {
+        fs::remove_file(output_path)?;
+    }
+
+    let output_dir = output_path.with_extension("");
+    if output_dir.exists() {
+        fs::remove_dir_all(output_dir)?;
+    }
+
+    Ok(())
+}
+
+fn copy_dir(source: &Path, destination: &Path) -> std::io::Result<()> {
+    fs::create_dir_all(destination)?;
+
+    for entry in fs::read_dir(source)? {
+        let entry = entry?;
+        let source_path = entry.path();
+        let destination_path = destination.join(entry.file_name());
+
+        if entry.file_type()?.is_dir() {
+            copy_dir(&source_path, &destination_path)?;
+        } else {
+            fs::copy(source_path, destination_path)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn svg_names(dir: &Path) -> std::io::Result<Vec<String>> {
+    let mut svg_names = fs::read_dir(dir)?
+        .filter_map(|entry| {
+            let entry = entry.ok()?;
+            let path = entry.path();
+            let is_svg = path.extension().is_some_and(|extension| extension == "svg");
+
+            if entry.file_type().ok()?.is_file() && is_svg {
+                Some(entry.file_name().to_string_lossy().into_owned())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+    svg_names.sort();
+    Ok(svg_names)
+}
+
+fn rewrite_svg_links(diagram: &str, asset_dir: &Path, svg_names: &[String]) -> String {
+    let asset_dir = asset_dir.to_string_lossy().replace('\\', "/");
+    let mut diagram = diagram.to_owned();
+
+    for svg_name in svg_names {
+        let target = format!("{asset_dir}/{svg_name}");
+
+        for attribute in ["href", "xlink:href"] {
+            diagram = diagram.replace(
+                &format!(r#"{attribute}="{svg_name}""#),
+                &format!(r#"{attribute}="{target}""#),
+            );
+            diagram = diagram.replace(
+                &format!(r"{attribute}='{svg_name}'"),
+                &format!(r"{attribute}='{target}'"),
+            );
+        }
+    }
+
+    diagram
+}
+
 impl Backend {
     /// Creates a new Backend instance
     ///
@@ -158,45 +229,30 @@ impl Backend {
         output_path: &Path,
     ) -> anyhow::Result<()> {
         fs::create_dir_all(output_path.parent().expect("output path has no parent"))?;
+        cleanup_output_path(output_path)?;
         let mut args = self.basic_args();
         args.push(output_path.as_os_str());
         self.run_process(ctx, content, args)?;
         Ok(())
     }
 
-    fn render_inline(
-        &self,
-        ctx: &RenderContext,
-        content: &str,
-    ) -> anyhow::Result<Vec<Event<'static>>> {
-        let tmp_dir = tempfile::tempdir()?;
-        let output_path = tmp_dir.path().join("output.svg");
-        self.compile(ctx, content, &output_path)?;
-        let diagram = fs::read_to_string(resolve_output_path(&output_path))?;
-        Ok(vec![Event::Html(
-            format!("\n<pre>{diagram}</pre>\n").into(),
-        )])
-    }
-
-    fn render_embedded(
-        &self,
-        ctx: &RenderContext,
-        content: &str,
-    ) -> anyhow::Result<Vec<Event<'static>>> {
-        let filepath = self.filepath(ctx);
-        self.compile(ctx, content, &filepath)?;
-
-        let actual = resolve_output_path(&filepath);
-        let rel_from_source = actual
+    fn relative_path(&self, ctx: &RenderContext, target: &Path) -> PathBuf {
+        let rel_from_source = target
             .strip_prefix(&self.source_dir)
             .expect("output path is within source dir");
 
         let depth = ctx.path.ancestors().count() - 2;
-        let rel_path: PathBuf = std::iter::repeat_n(Path::new(".."), depth)
+        std::iter::repeat_n(Path::new(".."), depth)
             .collect::<PathBuf>()
-            .join(rel_from_source);
+            .join(rel_from_source)
+    }
 
-        Ok(vec![
+    fn render_inline_svg(diagram: &str) -> Vec<Event<'static>> {
+        vec![Event::Html(format!("\n{diagram}\n").into())]
+    }
+
+    fn render_image(rel_path: &Path) -> Vec<Event<'static>> {
+        vec![
             Event::Start(Tag::Paragraph),
             Event::Start(Tag::Image {
                 link_type: LinkType::Inline,
@@ -210,7 +266,66 @@ impl Backend {
             }),
             Event::End(TagEnd::Image),
             Event::End(TagEnd::Paragraph),
-        ])
+        ]
+    }
+
+    fn render_multiboard(
+        &self,
+        ctx: &RenderContext,
+        output_path: &Path,
+    ) -> anyhow::Result<Vec<Event<'static>>> {
+        let actual = resolve_output_path(output_path);
+        let output_dir = actual.parent().expect("multiboard output has no parent");
+        let diagram = fs::read_to_string(&actual)?;
+        let svg_names = svg_names(output_dir)?;
+        let rel_output_dir = self.relative_path(ctx, output_dir);
+
+        let diagram = rewrite_svg_links(&diagram, &rel_output_dir, &svg_names);
+        Ok(Self::render_inline_svg(&diagram))
+    }
+
+    fn publish_multiboard_output(source: &Path, destination: &Path) -> anyhow::Result<()> {
+        fs::create_dir_all(destination.parent().expect("output path has no parent"))?;
+        cleanup_output_path(destination)?;
+        copy_dir(&source.with_extension(""), &destination.with_extension(""))?;
+        Ok(())
+    }
+
+    fn render_inline(
+        &self,
+        ctx: &RenderContext,
+        content: &str,
+    ) -> anyhow::Result<Vec<Event<'static>>> {
+        let tmp_dir = tempfile::tempdir()?;
+        let output_path = tmp_dir.path().join("output.svg");
+        self.compile(ctx, content, &output_path)?;
+        let actual = resolve_output_path(&output_path);
+
+        if actual == output_path {
+            let diagram = fs::read_to_string(actual)?;
+            return Ok(Self::render_inline_svg(&diagram));
+        }
+
+        let published_path = self.filepath(ctx);
+        Self::publish_multiboard_output(&output_path, &published_path)?;
+        self.render_multiboard(ctx, &published_path)
+    }
+
+    fn render_embedded(
+        &self,
+        ctx: &RenderContext,
+        content: &str,
+    ) -> anyhow::Result<Vec<Event<'static>>> {
+        let filepath = self.filepath(ctx);
+        self.compile(ctx, content, &filepath)?;
+
+        let actual = resolve_output_path(&filepath);
+
+        if actual == filepath {
+            return Ok(Self::render_image(&self.relative_path(ctx, &actual)));
+        }
+
+        self.render_multiboard(ctx, &filepath)
     }
 
     fn basic_args(&self) -> Vec<&OsStr> {
@@ -275,5 +390,31 @@ impl Backend {
             );
             bail!(msg)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::rewrite_svg_links;
+
+    #[test]
+    fn rewrite_svg_links_only_updates_known_board_assets() {
+        let diagram = concat!(
+            r#"<a href="with_z.svg"></a>"#,
+            r#"<a xlink:href='index.svg'></a>"#,
+            r##"<a href="#local"></a>"##
+        );
+
+        let rewritten = rewrite_svg_links(
+            diagram,
+            Path::new("d2/1.1"),
+            &["index.svg".into(), "with_z.svg".into()],
+        );
+
+        assert!(rewritten.contains(r#"href="d2/1.1/with_z.svg""#));
+        assert!(rewritten.contains(r"xlink:href='d2/1.1/index.svg'"));
+        assert!(rewritten.contains(r##"href="#local""##));
     }
 }
