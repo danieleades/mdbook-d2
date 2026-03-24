@@ -154,6 +154,18 @@ fn rewrite_svg_links(diagram: &str, asset_dir: &Path, svg_names: &[String]) -> S
     diagram
 }
 
+fn strip_xml_declaration(diagram: &str) -> &str {
+    let diagram = diagram.trim_start();
+
+    if !diagram.starts_with("<?xml") {
+        return diagram;
+    }
+
+    diagram
+        .split_once("?>")
+        .map_or(diagram, |(_, diagram)| diagram.trim_start())
+}
+
 impl Backend {
     /// Creates a new Backend instance
     ///
@@ -248,7 +260,10 @@ impl Backend {
     }
 
     fn render_inline_svg(diagram: &str) -> Vec<Event<'static>> {
-        vec![Event::Html(format!("\n{diagram}\n").into())]
+        let diagram = strip_xml_declaration(diagram);
+        vec![Event::Html(
+            format!("\n<div class=\"mdbook-d2\">\n{diagram}\n</div>\n").into(),
+        )]
     }
 
     fn render_image(rel_path: &Path) -> Vec<Event<'static>> {
@@ -397,7 +412,7 @@ impl Backend {
 mod tests {
     use std::path::Path;
 
-    use super::rewrite_svg_links;
+    use super::{rewrite_svg_links, strip_xml_declaration};
 
     #[test]
     fn rewrite_svg_links_only_updates_known_board_assets() {
@@ -416,5 +431,12 @@ mod tests {
         assert!(rewritten.contains(r#"href="d2/1.1/with_z.svg""#));
         assert!(rewritten.contains(r"xlink:href='d2/1.1/index.svg'"));
         assert!(rewritten.contains(r##"href="#local""##));
+    }
+
+    #[test]
+    fn strip_xml_declaration_removes_svg_preamble() {
+        let diagram = "<?xml version=\"1.0\"?><svg></svg>";
+
+        assert_eq!(strip_xml_declaration(diagram), "<svg></svg>");
     }
 }
