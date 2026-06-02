@@ -6,6 +6,5 @@ inline = true
 layout = "elk"
 theme-id = "101"
 dark-theme-id = "200"
-fail-on-error = true
 
 [output.html]

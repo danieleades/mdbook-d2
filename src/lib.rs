@@ -46,15 +46,23 @@ impl Preprocessor for D2 {
         });
 
         if !errors.is_empty() {
-            let details = errors
-                .iter()
-                .map(ToString::to_string)
-                .collect::<Vec<_>>()
-                .join("\n");
-            return Err(anyhow::anyhow!(
-                "failed to render {} d2 diagram(s):\n{details}",
-                errors.len()
-            ));
+            if backend.fail_on_error() {
+                let details = errors
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                return Err(anyhow::anyhow!(
+                    "failed to render {} d2 diagram(s):\n{details}",
+                    errors.len()
+                ));
+            }
+
+            // Otherwise report the failures but let the build succeed, omitting
+            // the offending diagrams.
+            for e in &errors {
+                eprintln!("{e}");
+            }
         }
 
         Ok(book)

@@ -42,6 +42,14 @@ pub struct Config {
     #[serde(default = "default::inline")]
     pub inline: bool,
 
+    /// Whether a diagram that fails to render should fail the whole build
+    ///
+    /// When 'false' (the default), render failures are printed to stderr and
+    /// the offending diagram is omitted, but the build still succeeds. When
+    /// 'true', any render failure causes the build to exit with an error.
+    #[serde(default)]
+    pub fail_on_error: bool,
+
     /// Custom font path
     ///
     /// Only ttf fonts are valid
@@ -58,6 +66,7 @@ impl Default for Config {
             layout: None,
             output_dir: default::output_dir(),
             inline: default::inline(),
+            fail_on_error: false,
             fonts: None,
             theme_id: None,
             dark_theme_id: None,
@@ -97,12 +106,23 @@ output-dir = "d2-img"
         path: PathBuf::from("/custom/bin/d2"),
         layout: Some(String::from("elk")),
         inline: true,
+        fail_on_error: false,
         output_dir: PathBuf::from("d2-img"),
         fonts: None,
         theme_id: None,
         dark_theme_id:None,
     }
         ; "custom"
+    )]
+    #[test_case(
+        r"
+fail-on-error = true
+"
+    => Config {
+        fail_on_error: true,
+        ..Config::default()
+    }
+        ; "fail-on-error"
     )]
     fn parse(input: &str) -> Config {
         toml::from_str(input).unwrap()

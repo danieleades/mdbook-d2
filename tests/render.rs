@@ -40,11 +40,21 @@ fn custom_src() {
 }
 
 #[test]
-fn broken_diagram_fails_build() {
+fn broken_diagram_fails_build_when_fail_on_error() {
     let result = TestBook::new("broken");
 
     assert!(
         result.is_err(),
-        "build should fail when a d2 diagram is invalid"
+        "build should fail when a d2 diagram is invalid and fail-on-error is set"
+    );
+}
+
+#[test]
+fn broken_diagram_succeeds_by_default() {
+    let result = TestBook::new("broken-default");
+
+    assert!(
+        result.is_ok(),
+        "build should succeed when a d2 diagram is invalid and fail-on-error is unset"
     );
 }
