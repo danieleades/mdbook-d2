@@ -33,54 +33,80 @@ impl Preprocessor for D2 {
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, Error> {
         let backend = Backend::from_context(ctx);
 
+        // Collect every diagram that fails to render rather than bailing on the
+        // first one, so a single build reports all broken diagrams at once.
+        let mut errors: Vec<Error> = Vec::new();
+
         book.for_each_mut(|section| {
             if let BookItem::Chapter(chapter) = section {
-                let events: Vec<_> = process_events(
-                    &backend,
-                    chapter,
-                    Parser::new_ext(&chapter.content, Options::all()),
-                )
-                .collect();
-
-                // Determine the minimum number of backticks needed for code blocks.
-                // Use 3 (the CommonMark default) unless nested code blocks require more.
-                // This preserves the original markdown structure while correctly handling
-                // code blocks that contain other code block examples.
-                // See: https://github.com/danieleades/mdbook-d2/issues/170
-                let code_block_token_count =
-                    calculate_code_block_token_count(events.iter()).unwrap_or(3);
-
-                let options = pulldown_cmark_to_cmark::Options {
-                    code_block_token_count,
-                    ..Default::default()
-                };
-
-                // create a buffer in which we can place the markdown
-                let mut buf = String::with_capacity(chapter.content.len() + 128);
-
-                // convert it back to markdown and replace the original chapter's content
-                cmark_with_options(events.into_iter(), &mut buf, options).unwrap();
-                chapter.content = buf;
+                chapter.content = render_chapter(&backend, chapter, &mut errors);
             }
         });
+
+        if !errors.is_empty() {
+            let details = errors
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .join("\n");
+            return Err(anyhow::anyhow!(
+                "failed to render {} d2 diagram(s):\n{details}",
+                errors.len()
+            ));
+        }
 
         Ok(book)
     }
 }
 
+/// Renders all d2 diagrams in a chapter and returns the rewritten markdown.
+///
+/// Any diagram that fails to render is pushed onto `errors` (and omitted from
+/// the output) so the caller can surface every failure and fail the build.
+fn render_chapter(backend: &Backend, chapter: &Chapter, errors: &mut Vec<Error>) -> String {
+    let events = process_events(
+        backend,
+        chapter,
+        Parser::new_ext(&chapter.content, Options::all()),
+        errors,
+    );
+
+    // Determine the minimum number of backticks needed for code blocks.
+    // Use 3 (the CommonMark default) unless nested code blocks require more.
+    // This preserves the original markdown structure while correctly handling
+    // code blocks that contain other code block examples.
+    // See: https://github.com/danieleades/mdbook-d2/issues/170
+    let code_block_token_count = calculate_code_block_token_count(events.iter()).unwrap_or(3);
+
+    let options = pulldown_cmark_to_cmark::Options {
+        code_block_token_count,
+        ..Default::default()
+    };
+
+    // create a buffer in which we can place the markdown
+    let mut buf = String::with_capacity(chapter.content.len() + 128);
+
+    // convert it back to markdown
+    cmark_with_options(events.into_iter(), &mut buf, options).unwrap();
+
+    buf
+}
+
 fn process_events<'a>(
-    backend: &'a Backend,
-    chapter: &'a Chapter,
-    events: impl Iterator<Item = Event<'a>> + 'a,
-) -> impl Iterator<Item = Event<'a>> + 'a {
+    backend: &Backend,
+    chapter: &Chapter,
+    events: impl Iterator<Item = Event<'a>>,
+    errors: &mut Vec<Error>,
+) -> Vec<Event<'a>> {
     let mut in_block = false;
     // if Windows crlf line endings are used, a code block will consist
     // of many different Text blocks, thus we need to buffer them in here
     // see https://github.com/raphlinus/pulldown-cmark/issues/507
     let mut diagram = String::new();
     let mut diagram_index = 0;
+    let mut out = Vec::new();
 
-    events.flat_map(move |event| {
+    for event in events {
         match (&event, in_block) {
             // check if we are entering a d2 codeblock
             (
@@ -90,12 +116,10 @@ fn process_events<'a>(
                 in_block = true;
                 diagram.clear();
                 diagram_index += 1;
-                vec![]
             }
             // check if we are currently inside a d2 block
             (Event::Text(content), true) => {
                 diagram.push_str(content);
-                vec![]
             }
             // check if we are exiting a d2 block
             (Event::End(TagEnd::CodeBlock), true) => {
@@ -106,19 +130,19 @@ fn process_events<'a>(
                     chapter.number.as_ref(),
                     diagram_index,
                 );
-                backend
-                    .render(&render_context, &diagram)
-                    .unwrap_or_else(|e| {
-                        // if we cannot render the diagram, print the error and return an empty
-                        // block
-                        eprintln!("{e}");
-                        vec![]
-                    })
+                match backend.render(&render_context, &diagram) {
+                    Ok(rendered) => out.extend(rendered),
+                    // if we cannot render the diagram, record the error and omit
+                    // the block; the caller surfaces it and fails the build
+                    Err(e) => errors.push(e),
+                }
             }
             // if nothing matches, change nothing
-            _ => vec![event],
+            _ => out.push(event),
         }
-    })
+    }
+
+    out
 }
 
 #[cfg(test)]
