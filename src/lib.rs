@@ -33,13 +33,15 @@ impl Preprocessor for D2 {
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, Error> {
         let backend = Backend::from_context(ctx);
 
-        // Collect every diagram that fails to render rather than bailing on the
-        // first one, so a single build reports all broken diagrams at once.
+        // Collect every render failure rather than bailing on the first, so a
+        // single build reports all broken diagrams at once.
         let mut errors: Vec<Error> = Vec::new();
 
         book.for_each_mut(|section| {
             if let BookItem::Chapter(chapter) = section {
-                chapter.content = render_chapter(&backend, chapter, &mut errors);
+                let (content, chapter_errors) = render_chapter(&backend, chapter);
+                chapter.content = content;
+                errors.extend(chapter_errors);
             }
         });
 
@@ -59,16 +61,16 @@ impl Preprocessor for D2 {
     }
 }
 
-/// Renders all d2 diagrams in a chapter and returns the rewritten markdown.
+/// Renders all d2 diagrams in a chapter, returning the rewritten markdown
+/// alongside any diagrams that failed to render.
 ///
-/// Any diagram that fails to render is pushed onto `errors` (and omitted from
-/// the output) so the caller can surface every failure and fail the build.
-fn render_chapter(backend: &Backend, chapter: &Chapter, errors: &mut Vec<Error>) -> String {
-    let events = process_events(
+/// Diagrams that fail to render are omitted from the output; the caller
+/// surfaces the returned errors to fail the build.
+fn render_chapter(backend: &Backend, chapter: &Chapter) -> (String, Vec<Error>) {
+    let (events, errors) = process_events(
         backend,
         chapter,
         Parser::new_ext(&chapter.content, Options::all()),
-        errors,
     );
 
     // Determine the minimum number of backticks needed for code blocks.
@@ -89,26 +91,29 @@ fn render_chapter(backend: &Backend, chapter: &Chapter, errors: &mut Vec<Error>)
     // convert it back to markdown
     cmark_with_options(events.into_iter(), &mut buf, options).unwrap();
 
-    buf
+    (buf, errors)
 }
 
+/// Replaces each d2 code block in the event stream with its rendered output,
+/// partitioning the results into the rewritten events and any render errors.
 fn process_events<'a>(
     backend: &Backend,
     chapter: &Chapter,
     events: impl Iterator<Item = Event<'a>>,
-    errors: &mut Vec<Error>,
-) -> Vec<Event<'a>> {
+) -> (Vec<Event<'a>>, Vec<Error>) {
     let mut in_block = false;
     // if Windows crlf line endings are used, a code block will consist
     // of many different Text blocks, thus we need to buffer them in here
     // see https://github.com/raphlinus/pulldown-cmark/issues/507
     let mut diagram = String::new();
     let mut diagram_index = 0;
-    let mut out = Vec::new();
 
-    for event in events {
-        match (&event, in_block) {
-            // check if we are entering a d2 codeblock
+    // Map each input event to the output events it produces. Most events pass
+    // through unchanged; entering/inside a d2 block produces nothing; closing a
+    // d2 block produces the rendered diagram, or a render error.
+    events
+        .filter_map(|event| match (&event, in_block) {
+            // entering a d2 codeblock
             (
                 Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(CowStr::Borrowed("d2")))),
                 false,
@@ -116,12 +121,14 @@ fn process_events<'a>(
                 in_block = true;
                 diagram.clear();
                 diagram_index += 1;
+                None
             }
-            // check if we are currently inside a d2 block
+            // inside a d2 block
             (Event::Text(content), true) => {
                 diagram.push_str(content);
+                None
             }
-            // check if we are exiting a d2 block
+            // exiting a d2 block
             (Event::End(TagEnd::CodeBlock), true) => {
                 in_block = false;
                 let render_context = RenderContext::new(
@@ -130,19 +137,23 @@ fn process_events<'a>(
                     chapter.number.as_ref(),
                     diagram_index,
                 );
-                match backend.render(&render_context, &diagram) {
-                    Ok(rendered) => out.extend(rendered),
-                    // if we cannot render the diagram, record the error and omit
-                    // the block; the caller surfaces it and fails the build
+                Some(backend.render(&render_context, &diagram))
+            }
+            // anything else passes through unchanged
+            _ => Some(Ok(vec![event])),
+        })
+        // separate successfully-rendered events from render errors, flattening
+        // each successful chunk back into the output stream
+        .fold(
+            (Vec::new(), Vec::new()),
+            |(mut events, mut errors), result| {
+                match result {
+                    Ok(rendered) => events.extend(rendered),
                     Err(e) => errors.push(e),
                 }
-            }
-            // if nothing matches, change nothing
-            _ => out.push(event),
-        }
-    }
-
-    out
+                (events, errors)
+            },
+        )
 }
 
 #[cfg(test)]
