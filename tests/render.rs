@@ -38,3 +38,13 @@ fn custom_src() {
     assert!(output.exists());
     assert!(test_book.chapter1_contains(r#"img src="d2/1.1.svg" alt="">"#));
 }
+
+#[test]
+fn broken_diagram_fails_build() {
+    let result = TestBook::new("broken");
+
+    assert!(
+        result.is_err(),
+        "build should fail when a d2 diagram is invalid"
+    );
+}
