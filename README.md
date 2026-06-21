@@ -53,6 +53,12 @@ layout = "dagre"
 # optional. default is 'true'
 inline = true
 
+# whether a diagram that fails to render should fail the whole build.
+# if 'false', render failures are printed to stderr and the offending diagram is
+# omitted, but the build still succeeds.
+# optional. default is 'false'
+fail-on-error = false
+
 # output directory relative to `src/` for generated diagrams.
 # This is ignored if 'inline' is 'true'.
 # optional. default is "d2".

@@ -23,6 +23,8 @@ pub struct Backend {
     /// Layout engine to use for D2 diagrams
     layout: Option<String>,
     inline: bool,
+    /// Whether a diagram that fails to render should fail the whole build
+    fail_on_error: bool,
     fonts: Option<Fonts>,
     theme_id: Option<String>,
     dark_theme_id: Option<String>,
@@ -81,6 +83,7 @@ impl Backend {
             output_dir: config.output_dir,
             layout: config.layout,
             inline: config.inline,
+            fail_on_error: config.fail_on_error,
             source_dir,
             fonts: config.fonts,
             theme_id: config.theme_id,
@@ -106,6 +109,11 @@ impl Backend {
     /// Returns the relative path to the output directory
     fn output_dir(&self) -> &Path {
         &self.output_dir
+    }
+
+    /// Whether a diagram that fails to render should fail the whole build
+    pub const fn fail_on_error(&self) -> bool {
+        self.fail_on_error
     }
 
     /// Constructs the absolute file path for a diagram

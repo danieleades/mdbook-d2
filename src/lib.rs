@@ -33,46 +33,82 @@ impl Preprocessor for D2 {
     fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, Error> {
         let backend = Backend::from_context(ctx);
 
+        // Collect every render failure rather than bailing on the first, so a
+        // single build reports all broken diagrams at once.
+        let mut errors: Vec<Error> = Vec::new();
+
         book.for_each_mut(|section| {
             if let BookItem::Chapter(chapter) = section {
-                let events: Vec<_> = process_events(
-                    &backend,
-                    chapter,
-                    Parser::new_ext(&chapter.content, Options::all()),
-                )
-                .collect();
-
-                // Determine the minimum number of backticks needed for code blocks.
-                // Use 3 (the CommonMark default) unless nested code blocks require more.
-                // This preserves the original markdown structure while correctly handling
-                // code blocks that contain other code block examples.
-                // See: https://github.com/danieleades/mdbook-d2/issues/170
-                let code_block_token_count =
-                    calculate_code_block_token_count(events.iter()).unwrap_or(3);
-
-                let options = pulldown_cmark_to_cmark::Options {
-                    code_block_token_count,
-                    ..Default::default()
-                };
-
-                // create a buffer in which we can place the markdown
-                let mut buf = String::with_capacity(chapter.content.len() + 128);
-
-                // convert it back to markdown and replace the original chapter's content
-                cmark_with_options(events.into_iter(), &mut buf, options).unwrap();
-                chapter.content = buf;
+                let (content, chapter_errors) = render_chapter(&backend, chapter);
+                chapter.content = content;
+                errors.extend(chapter_errors);
             }
         });
+
+        if !errors.is_empty() {
+            if backend.fail_on_error() {
+                let details = errors
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                return Err(anyhow::anyhow!(
+                    "failed to render {} d2 diagram(s):\n{details}",
+                    errors.len()
+                ));
+            }
+
+            // Otherwise report the failures but let the build succeed, omitting
+            // the offending diagrams.
+            for e in &errors {
+                eprintln!("{e}");
+            }
+        }
 
         Ok(book)
     }
 }
 
+/// Renders all d2 diagrams in a chapter, returning the rewritten markdown
+/// alongside any diagrams that failed to render.
+///
+/// Diagrams that fail to render are omitted from the output; the caller
+/// surfaces the returned errors to fail the build.
+fn render_chapter(backend: &Backend, chapter: &Chapter) -> (String, Vec<Error>) {
+    let (events, errors) = process_events(
+        backend,
+        chapter,
+        Parser::new_ext(&chapter.content, Options::all()),
+    );
+
+    // Determine the minimum number of backticks needed for code blocks.
+    // Use 3 (the CommonMark default) unless nested code blocks require more.
+    // This preserves the original markdown structure while correctly handling
+    // code blocks that contain other code block examples.
+    // See: https://github.com/danieleades/mdbook-d2/issues/170
+    let code_block_token_count = calculate_code_block_token_count(events.iter()).unwrap_or(3);
+
+    let options = pulldown_cmark_to_cmark::Options {
+        code_block_token_count,
+        ..Default::default()
+    };
+
+    // create a buffer in which we can place the markdown
+    let mut buf = String::with_capacity(chapter.content.len() + 128);
+
+    // convert it back to markdown
+    cmark_with_options(events.into_iter(), &mut buf, options).unwrap();
+
+    (buf, errors)
+}
+
+/// Replaces each d2 code block in the event stream with its rendered output,
+/// partitioning the results into the rewritten events and any render errors.
 fn process_events<'a>(
-    backend: &'a Backend,
-    chapter: &'a Chapter,
-    events: impl Iterator<Item = Event<'a>> + 'a,
-) -> impl Iterator<Item = Event<'a>> + 'a {
+    backend: &Backend,
+    chapter: &Chapter,
+    events: impl Iterator<Item = Event<'a>>,
+) -> (Vec<Event<'a>>, Vec<Error>) {
     let mut in_block = false;
     // if Windows crlf line endings are used, a code block will consist
     // of many different Text blocks, thus we need to buffer them in here
@@ -80,9 +116,12 @@ fn process_events<'a>(
     let mut diagram = String::new();
     let mut diagram_index = 0;
 
-    events.flat_map(move |event| {
-        match (&event, in_block) {
-            // check if we are entering a d2 codeblock
+    // Map each input event to the output events it produces. Most events pass
+    // through unchanged; entering/inside a d2 block produces nothing; closing a
+    // d2 block produces the rendered diagram, or a render error.
+    events
+        .filter_map(|event| match (&event, in_block) {
+            // entering a d2 codeblock
             (
                 Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(CowStr::Borrowed("d2")))),
                 false,
@@ -90,14 +129,14 @@ fn process_events<'a>(
                 in_block = true;
                 diagram.clear();
                 diagram_index += 1;
-                vec![]
+                None
             }
-            // check if we are currently inside a d2 block
+            // inside a d2 block
             (Event::Text(content), true) => {
                 diagram.push_str(content);
-                vec![]
+                None
             }
-            // check if we are exiting a d2 block
+            // exiting a d2 block
             (Event::End(TagEnd::CodeBlock), true) => {
                 in_block = false;
                 let render_context = RenderContext::new(
@@ -106,19 +145,23 @@ fn process_events<'a>(
                     chapter.number.as_ref(),
                     diagram_index,
                 );
-                backend
-                    .render(&render_context, &diagram)
-                    .unwrap_or_else(|e| {
-                        // if we cannot render the diagram, print the error and return an empty
-                        // block
-                        eprintln!("{e}");
-                        vec![]
-                    })
+                Some(backend.render(&render_context, &diagram))
             }
-            // if nothing matches, change nothing
-            _ => vec![event],
-        }
-    })
+            // anything else passes through unchanged
+            _ => Some(Ok(vec![event])),
+        })
+        // separate successfully-rendered events from render errors, flattening
+        // each successful chunk back into the output stream
+        .fold(
+            (Vec::new(), Vec::new()),
+            |(mut events, mut errors), result| {
+                match result {
+                    Ok(rendered) => events.extend(rendered),
+                    Err(e) => errors.push(e),
+                }
+                (events, errors)
+            },
+        )
 }
 
 #[cfg(test)]
