@@ -1,0 +1,8 @@
+[book]
+title = "Test Book"
+
+[preprocessor.d2]
+inline = false
+layout = "elk"
+
+[output.html]

@@ -65,6 +65,11 @@ impl TestBook {
     ///
     /// A boolean indicating whether the snippet was found
     pub fn chapter1_contains(&self, snippet: &str) -> bool {
+        self.chapter1().contains(snippet)
+    }
+
+    /// Returns the rendered HTML for the first chapter.
+    pub fn chapter1(&self) -> String {
         let chapter1 = self
             .book
             .root
@@ -75,7 +80,7 @@ impl TestBook {
             .expect("couldn't read chapter1.html")
             .read_to_string(&mut content)
             .unwrap();
-        content.contains(snippet)
+        content
     }
 }
 
