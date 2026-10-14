@@ -14,8 +14,11 @@ use mdbook_preprocessor::{
     errors::Error,
     Preprocessor, PreprocessorContext,
 };
-use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 use pulldown_cmark_to_cmark::cmark_with_options;
+
+mod attributes;
+use attributes::Attributes;
 
 mod backend;
 use backend::{Backend, RenderContext};
@@ -156,7 +159,8 @@ fn process_events<'a>(
     chapter: &Chapter,
     events: impl Iterator<Item = Event<'a>>,
 ) -> (Vec<Event<'a>>, Vec<Error>) {
-    let mut in_block = false;
+    // the attributes of the d2 block currently being read, if any
+    let mut attributes = None;
     // if Windows crlf line endings are used, a code block will consist
     // of many different Text blocks, thus we need to buffer them in here
     // see https://github.com/raphlinus/pulldown-cmark/issues/507
@@ -167,13 +171,13 @@ fn process_events<'a>(
     // through unchanged; entering/inside a d2 block produces nothing; closing a
     // d2 block produces the rendered diagram, or a render error.
     events
-        .filter_map(|event| match (&event, in_block) {
-            // entering a d2 codeblock
-            (
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(CowStr::Borrowed("d2")))),
-                false,
-            ) => {
-                in_block = true;
+        .filter_map(|event| match (&event, attributes.is_some()) {
+            // entering a codeblock, which may or may not be a d2 block
+            (Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(info))), false) => {
+                attributes = Attributes::from_info(info);
+                if attributes.is_none() {
+                    return Some(Ok(vec![event]));
+                }
                 diagram.clear();
                 diagram_index += 1;
                 None
@@ -185,14 +189,20 @@ fn process_events<'a>(
             }
             // exiting a d2 block
             (Event::End(TagEnd::CodeBlock), true) => {
-                in_block = false;
                 let render_context = RenderContext::new(
                     chapter.source_path.as_ref().unwrap(),
                     &chapter.name,
                     chapter.number.as_ref(),
                     diagram_index,
                 );
-                Some(backend.render(&render_context, &diagram))
+                let rendered = attributes
+                    .take()
+                    .expect("inside a d2 block")
+                    .with_context(|| {
+                        format!("invalid d2 attributes ({}, #{diagram_index})", chapter.name)
+                    })
+                    .and_then(|attributes| backend.render(&render_context, &diagram, &attributes));
+                Some(rendered)
             }
             // anything else passes through unchanged
             _ => Some(Ok(vec![event])),

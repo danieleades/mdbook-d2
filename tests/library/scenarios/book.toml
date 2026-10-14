@@ -1,0 +1,9 @@
+[book]
+title = "Test Book"
+
+[preprocessor.d2]
+inline = true
+layout = "elk"
+fail-on-error = true
+
+[output.html]
