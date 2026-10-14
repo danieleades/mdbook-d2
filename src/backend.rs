@@ -6,7 +6,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use anyhow::{bail, Context};
+use anyhow::{bail, ensure, Context};
 use mdbook_preprocessor::{book::SectionNumber, PreprocessorContext};
 use pulldown_cmark::{CowStr, Event, LinkType, Tag, TagEnd};
 
@@ -106,11 +106,6 @@ impl Backend {
         Self::new(config, source_dir)
     }
 
-    /// Returns the relative path to the output directory
-    fn output_dir(&self) -> &Path {
-        &self.output_dir
-    }
-
     /// Whether a diagram that fails to render should fail the whole build
     pub const fn fail_on_error(&self) -> bool {
         self.fail_on_error
@@ -144,36 +139,33 @@ impl Backend {
         ctx: &RenderContext,
         content: &str,
     ) -> anyhow::Result<Vec<Event<'static>>> {
-        if self.inline {
-            self.render_inline(ctx, content)
-        } else {
-            self.render_embedded(ctx, content)
-        }
-    }
+        let diagram = self.run_process(ctx, content, self.basic_args())?;
 
-    fn render_inline(
-        &self,
-        ctx: &RenderContext,
-        content: &str,
-    ) -> anyhow::Result<Vec<Event<'static>>> {
-        let args = self.basic_args();
-        let diagram = self.run_process(ctx, content, args)?;
-        Ok(vec![Event::Html(
-            format!("\n<pre>{diagram}</pre>\n").into(),
-        )])
+        // an empty diagram is compiled successfully, but produces no output
+        ensure!(
+            !diagram.is_empty(),
+            "D2 diagram ({}, #{}) is empty",
+            ctx.chapter,
+            ctx.diagram_index
+        );
+
+        if self.inline {
+            Ok(vec![Event::Html(
+                format!("\n<pre>{diagram}</pre>\n").into(),
+            )])
+        } else {
+            self.render_embedded(ctx, &diagram)
+        }
     }
 
     fn render_embedded(
         &self,
         ctx: &RenderContext,
-        content: &str,
+        diagram: &str,
     ) -> anyhow::Result<Vec<Event<'static>>> {
-        fs::create_dir_all(Path::new(&self.source_dir).join(self.output_dir())).unwrap();
-        let mut args = self.basic_args();
         let filepath = self.filepath(ctx);
-        args.push(filepath.as_os_str());
-
-        self.run_process(ctx, content, args)?;
+        fs::create_dir_all(filepath.parent().expect("diagram path has a parent"))?;
+        fs::write(&filepath, diagram)?;
 
         let depth = ctx.path.ancestors().count() - 2;
         let rel_path: PathBuf = std::iter::repeat_n(Path::new(".."), depth)

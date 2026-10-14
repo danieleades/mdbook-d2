@@ -1,0 +1,8 @@
+[book]
+title = "Test Book"
+
+[preprocessor.d2]
+inline = false
+fail-on-error = true
+
+[output.html]
