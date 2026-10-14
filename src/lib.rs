@@ -8,6 +8,7 @@
 )]
 #![warn(clippy::pedantic, clippy::nursery)]
 
+use anyhow::Context;
 use mdbook_preprocessor::{
     book::{Book, BookItem, Chapter},
     errors::Error,
@@ -63,13 +64,27 @@ impl Preprocessor for D2 {
         // single build reports all broken diagrams at once.
         let mut errors: Vec<Error> = Vec::new();
 
+        // A chapter that can't be converted back to markdown is a fatal error,
+        // independent of `fail-on-error`, since it isn't a diagram failure.
+        let mut fatal: Option<Error> = None;
+
         book.for_each_mut(|section| {
             if let BookItem::Chapter(chapter) = section {
-                let (content, chapter_errors) = render_chapter(&backend, chapter);
-                chapter.content = content;
-                errors.extend(chapter_errors);
+                match render_chapter(&backend, chapter) {
+                    Ok((content, chapter_errors)) => {
+                        chapter.content = content;
+                        errors.extend(chapter_errors);
+                    }
+                    Err(e) => {
+                        fatal.get_or_insert(e);
+                    }
+                }
             }
         });
+
+        if let Some(e) = fatal {
+            return Err(e);
+        }
 
         if !errors.is_empty() {
             if backend.fail_on_error() {
@@ -101,7 +116,12 @@ impl Preprocessor for D2 {
 ///
 /// Diagrams that fail to render are omitted from the output; the caller
 /// surfaces the returned errors to fail the build.
-fn render_chapter(backend: &Backend, chapter: &Chapter) -> (String, Vec<Error>) {
+///
+/// # Errors
+///
+/// Returns an error if the rewritten chapter can't be serialised back to
+/// markdown.
+fn render_chapter(backend: &Backend, chapter: &Chapter) -> Result<(String, Vec<Error>), Error> {
     let (events, errors) = process_events(
         backend,
         chapter,
@@ -109,16 +129,24 @@ fn render_chapter(backend: &Backend, chapter: &Chapter) -> (String, Vec<Error>) 
     );
 
     // convert it back to markdown
-    let content = to_markdown(events, chapter.content.len() + 128);
+    let content = to_markdown(events, chapter.content.len() + 128).with_context(|| {
+        format!(
+            "failed to convert chapter '{}' back to markdown",
+            chapter.name
+        )
+    })?;
 
-    (content, errors)
+    Ok((content, errors))
 }
 
 /// Serialises a stream of markdown events back to markdown text
-fn to_markdown<'a>(events: impl IntoIterator<Item = Event<'a>>, capacity: usize) -> String {
+fn to_markdown<'a>(
+    events: impl IntoIterator<Item = Event<'a>>,
+    capacity: usize,
+) -> Result<String, pulldown_cmark_to_cmark::Error> {
     let mut buf = String::with_capacity(capacity);
-    cmark_with_options(events, &mut buf, PARSER_OPTIONS, cmark_options()).unwrap();
-    buf
+    cmark_with_options(events, &mut buf, PARSER_OPTIONS, cmark_options())?;
+    Ok(buf)
 }
 
 /// Replaces each d2 code block in the event stream with its rendered output,
@@ -189,7 +217,16 @@ mod tests {
 
     /// Helper to round-trip markdown like the preprocessor does.
     fn round_trip_markdown(input: &str) -> String {
-        to_markdown(Parser::new_ext(input, PARSER_OPTIONS), input.len())
+        to_markdown(Parser::new_ext(input, PARSER_OPTIONS), input.len()).unwrap()
+    }
+
+    /// An event stream that can't be serialised is reported as an error,
+    /// rather than panicking.
+    #[test]
+    fn invalid_event_stream_is_an_error() {
+        let events = [Event::End(TagEnd::Paragraph)];
+
+        assert!(to_markdown(events, 0).is_err());
     }
 
     /// The parser extensions and serialisation options must be a combination
