@@ -205,7 +205,7 @@ impl Backend {
             ensure!(
                 !output.with_extension("").is_dir(),
                 "D2 diagram ({}, #{}) has multiple boards (scenarios, steps or layers); select \
-                 one to render with 'target=<board>'",
+                 one to render with 'target=<board>', or animate them with 'animate-interval=<ms>'",
                 ctx.chapter,
                 ctx.diagram_index
             );
@@ -245,6 +245,9 @@ impl Backend {
         }
         if let Some(target) = &attributes.target {
             args.extend([OsStr::new("--target"), target.as_ref()]);
+        }
+        if let Some(interval) = &attributes.animate_interval {
+            args.extend([OsStr::new("--animate-interval"), interval.as_ref()]);
         }
         args.extend([OsStr::new("-"), output.as_os_str()]);
         args
