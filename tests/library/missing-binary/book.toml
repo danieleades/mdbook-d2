@@ -1,0 +1,9 @@
+[book]
+title = "Test Book"
+
+[preprocessor.d2]
+path = "/nonexistent/bin/d2"
+inline = true
+fail-on-error = true
+
+[output.html]

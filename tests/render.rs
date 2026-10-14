@@ -41,11 +41,14 @@ fn custom_src() {
 
 #[test]
 fn broken_diagram_fails_build_when_fail_on_error() {
-    let result = TestBook::new("broken");
+    let Err(err) = TestBook::new("broken") else {
+        panic!("build should fail when a d2 diagram is invalid and fail-on-error is set");
+    };
 
+    let msg = format!("{err:#}");
     assert!(
-        result.is_err(),
-        "build should fail when a d2 diagram is invalid and fail-on-error is set"
+        msg.contains("failed to compile D2 diagram (Chapter 1, #1)"),
+        "unexpected error: {msg}"
     );
 }
 
@@ -56,5 +59,18 @@ fn broken_diagram_succeeds_by_default() {
     assert!(
         result.is_ok(),
         "build should succeed when a d2 diagram is invalid and fail-on-error is unset"
+    );
+}
+
+#[test]
+fn missing_binary_error_includes_context() {
+    let Err(err) = TestBook::new("missing-binary") else {
+        panic!("build should fail when the d2 binary is missing and fail-on-error is set");
+    };
+
+    let msg = format!("{err:#}");
+    assert!(
+        msg.contains("failed to run D2 binary '/nonexistent/bin/d2' (Chapter 1, #1)"),
+        "unexpected error: {msg}"
     );
 }

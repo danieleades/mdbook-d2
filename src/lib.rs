@@ -49,7 +49,8 @@ impl Preprocessor for D2 {
             if backend.fail_on_error() {
                 let details = errors
                     .iter()
-                    .map(ToString::to_string)
+                    // `{:#}` includes the underlying cause, e.g. the OS error
+                    .map(|e| format!("{e:#}"))
                     .collect::<Vec<_>>()
                     .join("\n");
                 return Err(anyhow::anyhow!(
@@ -61,7 +62,7 @@ impl Preprocessor for D2 {
             // Otherwise report the failures but let the build succeed, omitting
             // the offending diagrams.
             for e in &errors {
-                eprintln!("{e}");
+                eprintln!("{e:#}");
             }
         }
 

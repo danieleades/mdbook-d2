@@ -6,7 +6,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use anyhow::bail;
+use anyhow::{bail, Context};
 use mdbook_preprocessor::{book::SectionNumber, PreprocessorContext};
 use pulldown_cmark::{CowStr, Event, LinkType, Tag, TagEnd};
 
@@ -244,15 +244,34 @@ impl Backend {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .args(args)
-            .spawn()?;
+            .spawn()
+            .with_context(|| {
+                format!(
+                    "failed to run D2 binary '{}' ({}, #{})",
+                    self.path.display(),
+                    ctx.chapter,
+                    ctx.diagram_index
+                )
+            })?;
 
         child
             .stdin
             .as_ref()
             .unwrap()
-            .write_all(content.as_bytes())?;
+            .write_all(content.as_bytes())
+            .with_context(|| {
+                format!(
+                    "failed to write D2 diagram to stdin ({}, #{})",
+                    ctx.chapter, ctx.diagram_index
+                )
+            })?;
 
-        let output = child.wait_with_output()?;
+        let output = child.wait_with_output().with_context(|| {
+            format!(
+                "failed to wait for D2 process ({}, #{})",
+                ctx.chapter, ctx.diagram_index
+            )
+        })?;
         if output.status.success() {
             let diagram = String::from_utf8_lossy(&output.stdout).to_string();
             Ok(diagram)
