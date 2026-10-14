@@ -42,11 +42,12 @@ impl Preprocessor for D2 {
                 )
                 .collect();
 
-                // Determine the minimum number of backticks needed for code blocks.
-                // Use 3 (the CommonMark default) unless nested code blocks require more.
-                // This preserves the original markdown structure while correctly handling
-                // code blocks that contain other code block examples.
-                // See: https://github.com/danieleades/mdbook-d2/issues/170
+                // Determine the minimum number of backticks needed for code
+                // blocks. Use 3 (the CommonMark default) unless
+                // nested code blocks require more.
+                // This preserves the original markdown structure while
+                // correctly handling code blocks that contain
+                // other code block examples. See: https://github.com/danieleades/mdbook-d2/issues/170
                 let code_block_token_count =
                     calculate_code_block_token_count(events.iter()).unwrap_or(3);
 
@@ -58,7 +59,8 @@ impl Preprocessor for D2 {
                 // create a buffer in which we can place the markdown
                 let mut buf = String::with_capacity(chapter.content.len() + 128);
 
-                // convert it back to markdown and replace the original chapter's content
+                // convert it back to markdown and replace the original
+                // chapter's content
                 cmark_with_options(events.into_iter(), &mut buf, options).unwrap();
                 chapter.content = buf;
             }
@@ -109,8 +111,8 @@ fn process_events<'a>(
                 backend
                     .render(&render_context, &diagram)
                     .unwrap_or_else(|e| {
-                        // if we cannot render the diagram, print the error and return an empty
-                        // block
+                        // if we cannot render the diagram, print the error and
+                        // return an empty block
                         eprintln!("{e}");
                         vec![]
                     })
@@ -208,7 +210,8 @@ That's it!
 
         let output = round_trip_markdown(input);
 
-        // The outer code block should still use 4 backticks to escape the inner 3
+        // The outer code block should still use 4 backticks to escape the inner
+        // 3
         assert!(
             output.contains("````"),
             "should have 4 backticks to escape nested block: {output}"
