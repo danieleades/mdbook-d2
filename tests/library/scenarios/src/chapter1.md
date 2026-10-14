@@ -2,11 +2,11 @@
 
 A single scenario:
 
-```d2 target=with_zed
+```d2 target="with zed"
 x -> y
 
 scenarios: {
-  with_zed: {
+  "with zed": {
     x -> zed
   }
 }
@@ -18,7 +18,7 @@ The root board:
 x -> y
 
 scenarios: {
-  with_zed: {
+  "with zed": {
     x -> zed
   }
 }

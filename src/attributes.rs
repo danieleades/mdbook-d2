@@ -20,34 +20,28 @@ impl Attributes {
     ///
     /// Returns `None` if the code block is not a d2 diagram.
     pub fn from_info(info: &str) -> Option<anyhow::Result<Self>> {
-        let mut words = info.split_whitespace();
-        (words.next() == Some("d2")).then(|| Self::parse(words))
+        let (language, attributes) = info.split_once(char::is_whitespace).unwrap_or((info, ""));
+        (language == "d2").then(|| Self::parse(attributes))
     }
 
-    fn parse<'a>(attributes: impl IntoIterator<Item = &'a str>) -> anyhow::Result<Self> {
+    /// Parses whitespace-separated `key=value` attributes, where values may be
+    /// quoted to include whitespace.
+    fn parse(attributes: &str) -> anyhow::Result<Self> {
         let mut parsed = Self::default();
 
-        for attribute in attributes {
+        for attribute in shlex::split(attributes).context("unbalanced quotes")? {
             let (key, value) = attribute
                 .split_once('=')
                 .with_context(|| format!("expected 'key=value', found '{attribute}'"))?;
 
             match key {
-                "target" => parsed.target = Some(unquote(value).to_owned()),
+                "target" => parsed.target = Some(value.to_owned()),
                 _ => bail!("unknown attribute '{key}'"),
             }
         }
 
         Ok(parsed)
     }
-}
-
-/// Strips a single pair of surrounding double quotes, if present.
-fn unquote(value: &str) -> &str {
-    value
-        .strip_prefix('"')
-        .and_then(|value| value.strip_suffix('"'))
-        .unwrap_or(value)
 }
 
 #[cfg(test)]
@@ -67,6 +61,7 @@ mod tests {
     #[test_case("d2   target=a.b  ", &target("a.b"); "extra whitespace")]
     #[test_case(r#"d2 target="""#, &target(""); "quoted root")]
     #[test_case("d2 target=", &target(""); "empty root")]
+    #[test_case(r#"d2 target="disaster recovery""#, &target("disaster recovery"); "quoted whitespace")]
     fn parses(info: &str, expected: &Attributes) {
         assert_eq!(&Attributes::from_info(info).unwrap().unwrap(), expected);
     }
@@ -80,6 +75,7 @@ mod tests {
 
     #[test_case("d2 target", "expected 'key=value', found 'target'"; "missing value")]
     #[test_case("d2 colour=red", "unknown attribute 'colour'"; "unknown key")]
+    #[test_case(r#"d2 target="a b"#, "unbalanced quotes"; "unbalanced quotes")]
     fn rejects(info: &str, message: &str) {
         let err = Attributes::from_info(info).unwrap().unwrap_err();
         assert_eq!(err.to_string(), message);

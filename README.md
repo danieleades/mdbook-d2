@@ -124,7 +124,9 @@ scenarios: {
 ```
 ````
 
-Use `target=""` to render the root board. Requires D2 v0.6.2 or later.
+Use `target=""` to render the root board, and quote board names that contain
+whitespace, e.g. `target="scenarios.disaster recovery"`. Requires D2 v0.6.2 or
+later.
 
 ## Thanks
 

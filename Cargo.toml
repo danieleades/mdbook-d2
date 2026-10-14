@@ -21,6 +21,7 @@ serde = { version = "1.0.219", features = ["derive"] }
 anyhow = "1.0.102"
 mdbook-preprocessor = "0.5.2"
 tempfile = "3.27.0"
+shlex = "2.0.1"
 
 [dev-dependencies]
 mdbook-driver = "0.5.2"
