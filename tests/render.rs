@@ -76,6 +76,30 @@ fn missing_binary_error_includes_context() {
     );
 }
 
+#[test]
+fn target_selects_a_single_board() {
+    let test_book = TestBook::new("scenarios").expect("couldn't create book");
+
+    let chapter1 = test_book.chapter1();
+    assert_eq!(chapter1.matches("data-d2-version").count(), 2);
+
+    // only the scenario adds 'zed'; the root board doesn't have it
+    assert_eq!(chapter1.matches(">zed</text>").count(), 1);
+}
+
+#[test]
+fn multiple_boards_without_target_is_an_error() {
+    let Err(err) = TestBook::new("multiboard") else {
+        panic!("build should fail when a diagram with multiple boards has no target");
+    };
+
+    let msg = format!("{err:#}");
+    assert!(
+        msg.contains("D2 diagram (Chapter 1, #1) has multiple boards"),
+        "unexpected error: {msg}"
+    );
+}
+
 #[test_case("empty"; "inline")]
 #[test_case("empty-embedded"; "embedded")]
 fn empty_diagram_is_an_error(book: &str) {

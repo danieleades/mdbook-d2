@@ -100,6 +100,32 @@ defendants.chesscom -> hans: 72 page report of cheating
 
 The code block will be replaced with the D2 diagram in the rendered document.
 
+### Diagram Attributes
+
+Individual diagrams can be configured with `key=value` attributes after the
+`d2` language tag.
+
+#### `target`
+
+Diagrams with [scenarios](https://d2lang.com/tour/scenarios/),
+[steps](https://d2lang.com/tour/steps/) or
+[layers](https://d2lang.com/tour/layers/) contain multiple boards, but only one
+can be rendered on the page. Select it with `target`:
+
+````md
+```d2 target=scenarios.failover
+api -> db
+
+scenarios: {
+  failover: {
+    api -> replica
+  }
+}
+```
+````
+
+Use `target=""` to render the root board. Requires D2 v0.6.2 or later.
+
 ## Thanks
 
 The code in this preprocessor is based on that from <https://github.com/matthiasbeyer/mdbook-svgbob2>

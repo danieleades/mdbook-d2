@@ -10,7 +10,10 @@ use anyhow::{bail, ensure, Context};
 use mdbook_preprocessor::{book::SectionNumber, PreprocessorContext};
 use pulldown_cmark::{CowStr, Event, LinkType, Tag, TagEnd};
 
-use crate::config::{Config, Fonts};
+use crate::{
+    attributes::Attributes,
+    config::{Config, Fonts},
+};
 
 /// Represents the backend for processing D2 diagrams
 pub struct Backend {
@@ -116,8 +119,7 @@ impl Backend {
     /// # Arguments
     /// * `ctx` - The render context for the diagram
     fn filepath(&self, ctx: &RenderContext) -> PathBuf {
-        let filepath = Path::new(&self.source_dir).join(self.relative_file_path(ctx));
-        filepath
+        self.source_dir.join(self.relative_file_path(ctx))
     }
 
     /// Constructs the relative file path for a diagram
@@ -134,20 +136,14 @@ impl Backend {
     /// # Arguments
     /// * `ctx` - The render context for the diagram
     /// * `content` - The D2 diagram content
+    /// * `attributes` - The options set on the diagram's code block
     pub fn render(
         &self,
         ctx: &RenderContext,
         content: &str,
+        attributes: &Attributes,
     ) -> anyhow::Result<Vec<Event<'static>>> {
-        let diagram = self.run_process(ctx, content, self.basic_args())?;
-
-        // an empty diagram is compiled successfully, but produces no output
-        ensure!(
-            !diagram.is_empty(),
-            "D2 diagram ({}, #{}) is empty",
-            ctx.chapter,
-            ctx.diagram_index
-        );
+        let diagram = self.compile(ctx, content, attributes)?;
 
         if self.inline {
             Ok(vec![Event::Html(
@@ -189,7 +185,43 @@ impl Backend {
         ])
     }
 
-    fn basic_args(&self) -> Vec<&OsStr> {
+    /// Compiles a D2 diagram to a single SVG
+    ///
+    /// D2 is run against a temporary output file, rather than stdout, so that
+    /// diagrams with multiple boards, or no content, can be reported clearly.
+    fn compile(
+        &self,
+        ctx: &RenderContext,
+        content: &str,
+        attributes: &Attributes,
+    ) -> anyhow::Result<String> {
+        let dir = tempfile::tempdir()?;
+        let output = dir.path().join("diagram.svg");
+
+        self.run_process(ctx, content, self.args(attributes, &output))?;
+
+        if !output.exists() {
+            // a diagram with multiple boards is written as a directory of SVGs
+            ensure!(
+                !output.with_extension("").is_dir(),
+                "D2 diagram ({}, #{}) has multiple boards (scenarios, steps or layers); select \
+                 one to render with 'target=<board>'",
+                ctx.chapter,
+                ctx.diagram_index
+            );
+
+            // an empty diagram is compiled successfully, but writes nothing
+            bail!(
+                "D2 diagram ({}, #{}) is empty",
+                ctx.chapter,
+                ctx.diagram_index
+            )
+        }
+
+        Ok(fs::read_to_string(output)?)
+    }
+
+    fn args<'a>(&'a self, attributes: &'a Attributes, output: &'a Path) -> Vec<&'a OsStr> {
         let mut args = vec![];
 
         if let Some(fonts) = &self.fonts {
@@ -211,7 +243,10 @@ impl Backend {
         if let Some(dark_theme_id) = &self.dark_theme_id {
             args.extend([OsStr::new("--dark-theme"), dark_theme_id.as_ref()]);
         }
-        args.push(OsStr::new("-"));
+        if let Some(target) = &attributes.target {
+            args.extend([OsStr::new("--target"), target.as_ref()]);
+        }
+        args.extend([OsStr::new("-"), output.as_os_str()]);
         args
     }
 
@@ -221,19 +256,14 @@ impl Backend {
     /// * `ctx` - The render context for the diagram
     /// * `content` - The D2 diagram content
     /// * `args` - Additional arguments for the D2 process
-    fn run_process<I, S>(
-        &self,
-        ctx: &RenderContext,
-        content: &str,
-        args: I,
-    ) -> anyhow::Result<String>
+    fn run_process<I, S>(&self, ctx: &RenderContext, content: &str, args: I) -> anyhow::Result<()>
     where
         I: IntoIterator<Item = S>,
         S: AsRef<OsStr>,
     {
         let child = Command::new(&self.path)
             .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
+            .stdout(Stdio::null())
             .stderr(Stdio::piped())
             .args(args)
             .spawn()
@@ -265,8 +295,7 @@ impl Backend {
             )
         })?;
         if output.status.success() {
-            let diagram = String::from_utf8_lossy(&output.stdout).to_string();
-            Ok(diagram)
+            Ok(())
         } else {
             let src =
                 format!("\n{}", String::from_utf8_lossy(&output.stderr)).replace('\n', "\n  ");
