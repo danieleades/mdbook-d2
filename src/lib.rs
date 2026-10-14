@@ -14,7 +14,7 @@ use mdbook_preprocessor::{
     Preprocessor, PreprocessorContext,
 };
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd};
-use pulldown_cmark_to_cmark::{calculate_code_block_token_count, cmark_with_options};
+use pulldown_cmark_to_cmark::cmark_with_options;
 
 mod backend;
 use backend::{Backend, RenderContext};
@@ -24,6 +24,32 @@ mod config;
 /// [D2] diagram generator [`Preprocessor`] for [`MdBook`](https://rust-lang.github.io/mdBook/).
 #[derive(Default, Clone, Copy, Debug)]
 pub struct D2;
+
+/// Markdown extensions used to parse chapters.
+///
+/// This mirrors the extensions mdBook itself parses with, so the rewritten
+/// markdown round-trips faithfully. Smart punctuation is deliberately omitted:
+/// mdBook applies it when rendering, and it cannot be round-tripped.
+const PARSER_OPTIONS: Options = Options::ENABLE_TABLES
+    .union(Options::ENABLE_FOOTNOTES)
+    .union(Options::ENABLE_STRIKETHROUGH)
+    .union(Options::ENABLE_TASKLISTS)
+    .union(Options::ENABLE_HEADING_ATTRIBUTES)
+    .union(Options::ENABLE_DEFINITION_LIST)
+    .union(Options::ENABLE_GFM);
+
+/// Markdown serialisation options.
+///
+/// Prefer 3 backticks (the `CommonMark` default) for code blocks, to preserve
+/// the original markdown structure for downstream preprocessors. The
+/// serialiser automatically uses more where a block contains nested fences.
+/// See: <https://github.com/danieleades/mdbook-d2/issues/170>
+fn cmark_options() -> pulldown_cmark_to_cmark::Options<'static> {
+    pulldown_cmark_to_cmark::Options {
+        code_block_token_count: 3,
+        ..Default::default()
+    }
+}
 
 impl Preprocessor for D2 {
     fn name(&self) -> &'static str {
@@ -79,28 +105,20 @@ fn render_chapter(backend: &Backend, chapter: &Chapter) -> (String, Vec<Error>) 
     let (events, errors) = process_events(
         backend,
         chapter,
-        Parser::new_ext(&chapter.content, Options::all()),
+        Parser::new_ext(&chapter.content, PARSER_OPTIONS),
     );
 
-    // Determine the minimum number of backticks needed for code blocks.
-    // Use 3 (the CommonMark default) unless nested code blocks require more.
-    // This preserves the original markdown structure while correctly handling
-    // code blocks that contain other code block examples.
-    // See: https://github.com/danieleades/mdbook-d2/issues/170
-    let code_block_token_count = calculate_code_block_token_count(events.iter()).unwrap_or(3);
-
-    let options = pulldown_cmark_to_cmark::Options {
-        code_block_token_count,
-        ..Default::default()
-    };
-
-    // create a buffer in which we can place the markdown
-    let mut buf = String::with_capacity(chapter.content.len() + 128);
-
     // convert it back to markdown
-    cmark_with_options(events.into_iter(), &mut buf, options).unwrap();
+    let content = to_markdown(events, chapter.content.len() + 128);
 
-    (buf, errors)
+    (content, errors)
+}
+
+/// Serialises a stream of markdown events back to markdown text
+fn to_markdown<'a>(events: impl IntoIterator<Item = Event<'a>>, capacity: usize) -> String {
+    let mut buf = String::with_capacity(capacity);
+    cmark_with_options(events, &mut buf, PARSER_OPTIONS, cmark_options()).unwrap();
+    buf
 }
 
 /// Replaces each d2 code block in the event stream with its rendered output,
@@ -171,15 +189,14 @@ mod tests {
 
     /// Helper to round-trip markdown like the preprocessor does.
     fn round_trip_markdown(input: &str) -> String {
-        let events: Vec<_> = Parser::new_ext(input, Options::all()).collect();
-        let code_block_token_count = calculate_code_block_token_count(events.iter()).unwrap_or(3);
-        let options = pulldown_cmark_to_cmark::Options {
-            code_block_token_count,
-            ..Default::default()
-        };
-        let mut output = String::new();
-        cmark_with_options(events.into_iter(), &mut output, options).unwrap();
-        output
+        to_markdown(Parser::new_ext(input, PARSER_OPTIONS), input.len())
+    }
+
+    /// The parser extensions and serialisation options must be a combination
+    /// that pulldown-cmark-to-cmark can round-trip losslessly.
+    #[test]
+    fn markdown_options_round_trip() {
+        cmark_options().validate(PARSER_OPTIONS).unwrap();
     }
 
     /// Tests that code blocks preserve 3 backticks after round-trip conversion.
