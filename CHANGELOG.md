@@ -1,5 +1,33 @@
 # CHANGELOG
 
+## [0.3.9](https://github.com/danieleades/mdbook-d2/compare/v0.3.8...v0.3.9) - 2026-10-14
+
+### Fixed
+
+- fail the build when a d2 diagram fails to render ([#192](https://github.com/danieleades/mdbook-d2/pull/192))
+
+### Other
+
+- *(deps)* bump the patch-updates group across 1 directory with 3 updates ([#204](https://github.com/danieleades/mdbook-d2/pull/204))
+- *(deps)* bump pulldown-cmark-to-cmark from 22.0.0 to 23.0.0 ([#199](https://github.com/danieleades/mdbook-d2/pull/199))
+- *(deps)* bump test-case from 3.3.1 to 3.4.0 ([#198](https://github.com/danieleades/mdbook-d2/pull/198))
+- refresh nightly rustfmt formatting ([#201](https://github.com/danieleades/mdbook-d2/pull/201))
+- *(deps)* bump the patch-updates group with 5 updates ([#196](https://github.com/danieleades/mdbook-d2/pull/196))
+- *(deps)* bump anyhow from 1.0.102 to 1.0.103 in the patch-updates group ([#195](https://github.com/danieleades/mdbook-d2/pull/195))
+- *(deps)* bump actions/checkout from 6 to 7 ([#194](https://github.com/danieleades/mdbook-d2/pull/194))
+- *(deps)* bump codecov/codecov-action from 6 to 7 ([#193](https://github.com/danieleades/mdbook-d2/pull/193))
+- *(deps)* bump the patch-updates group with 2 updates ([#191](https://github.com/danieleades/mdbook-d2/pull/191))
+- *(deps)* bump the patch-updates group with 2 updates ([#189](https://github.com/danieleades/mdbook-d2/pull/189))
+- *(deps)* bump pulldown-cmark from 0.13.1 to 0.13.3 in the patch-updates group ([#188](https://github.com/danieleades/mdbook-d2/pull/188))
+- *(deps)* bump codecov/codecov-action from 5 to 6 ([#186](https://github.com/danieleades/mdbook-d2/pull/186))
+- *(deps)* bump clap from 4.5.60 to 4.6.0 ([#183](https://github.com/danieleades/mdbook-d2/pull/183))
+- *(deps)* bump tempfile from 3.26.0 to 3.27.0 ([#182](https://github.com/danieleades/mdbook-d2/pull/182))
+- *(deps)* bump the patch-updates group with 3 updates ([#181](https://github.com/danieleades/mdbook-d2/pull/181))
+- *(deps)* bump tempfile from 3.25.0 to 3.26.0 ([#180](https://github.com/danieleades/mdbook-d2/pull/180))
+- *(deps)* bump toml from 0.9.11+spec-1.1.0 to 1.0.0+spec-1.1.0 ([#179](https://github.com/danieleades/mdbook-d2/pull/179))
+- *(deps)* bump tempfile from 3.24.0 to 3.25.0 ([#178](https://github.com/danieleades/mdbook-d2/pull/178))
+- *(deps)* bump the patch-updates group with 3 updates ([#177](https://github.com/danieleades/mdbook-d2/pull/177))
+
 ## [0.3.8](https://github.com/danieleades/mdbook-d2/compare/v0.3.7...v0.3.8) - 2026-01-06
 
 ### Fixed
