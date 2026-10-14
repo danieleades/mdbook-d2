@@ -6,7 +6,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use anyhow::bail;
+use anyhow::{bail, Context};
 use mdbook_preprocessor::{book::SectionNumber, PreprocessorContext};
 use pulldown_cmark::{CowStr, Event, LinkType, Tag, TagEnd};
 
@@ -23,6 +23,8 @@ pub struct Backend {
     /// Layout engine to use for D2 diagrams
     layout: Option<String>,
     inline: bool,
+    /// Whether a diagram that fails to render should fail the whole build
+    fail_on_error: bool,
     fonts: Option<Fonts>,
     theme_id: Option<String>,
     dark_theme_id: Option<String>,
@@ -81,6 +83,7 @@ impl Backend {
             output_dir: config.output_dir,
             layout: config.layout,
             inline: config.inline,
+            fail_on_error: config.fail_on_error,
             source_dir,
             fonts: config.fonts,
             theme_id: config.theme_id,
@@ -106,6 +109,11 @@ impl Backend {
     /// Returns the relative path to the output directory
     fn output_dir(&self) -> &Path {
         &self.output_dir
+    }
+
+    /// Whether a diagram that fails to render should fail the whole build
+    pub const fn fail_on_error(&self) -> bool {
+        self.fail_on_error
     }
 
     /// Constructs the absolute file path for a diagram
@@ -236,15 +244,34 @@ impl Backend {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .args(args)
-            .spawn()?;
+            .spawn()
+            .with_context(|| {
+                format!(
+                    "failed to run D2 binary '{}' ({}, #{})",
+                    self.path.display(),
+                    ctx.chapter,
+                    ctx.diagram_index
+                )
+            })?;
 
         child
             .stdin
             .as_ref()
             .unwrap()
-            .write_all(content.as_bytes())?;
+            .write_all(content.as_bytes())
+            .with_context(|| {
+                format!(
+                    "failed to write D2 diagram to stdin ({}, #{})",
+                    ctx.chapter, ctx.diagram_index
+                )
+            })?;
 
-        let output = child.wait_with_output()?;
+        let output = child.wait_with_output().with_context(|| {
+            format!(
+                "failed to wait for D2 process ({}, #{})",
+                ctx.chapter, ctx.diagram_index
+            )
+        })?;
         if output.status.success() {
             let diagram = String::from_utf8_lossy(&output.stdout).to_string();
             Ok(diagram)
