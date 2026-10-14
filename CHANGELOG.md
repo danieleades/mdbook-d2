@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [0.3.10](https://github.com/danieleades/mdbook-d2/compare/v0.3.9...v0.3.10) - 2026-10-14
+
+### Fixed
+
+- report empty diagrams as an error ([#207](https://github.com/danieleades/mdbook-d2/pull/207))
+
 ## [0.3.9](https://github.com/danieleades/mdbook-d2/compare/v0.3.8...v0.3.9) - 2026-10-14
 
 ### Fixed
