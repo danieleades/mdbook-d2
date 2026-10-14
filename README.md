@@ -128,6 +128,21 @@ Use `target=""` to render the root board, and quote board names that contain
 whitespace, e.g. `target="scenarios.disaster recovery"`. Requires D2 v0.6.2 or
 later.
 
+#### `animate-interval`
+
+Alternatively, render every board into a single animated SVG, showing each one
+for the given number of milliseconds:
+
+````md
+```d2 animate-interval=1500
+...
+```
+````
+
+The animation is pure CSS, so it plays wherever the SVG is displayed. Printed
+output (including PDF) captures whichever board is showing at the time; use
+`target` for books that will be printed.
+
 ## Thanks
 
 The code in this preprocessor is based on that from <https://github.com/matthiasbeyer/mdbook-svgbob2>

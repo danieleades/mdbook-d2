@@ -13,6 +13,10 @@ pub struct Attributes {
     ///
     /// An empty target selects the root board.
     pub target: Option<String>,
+
+    /// Animates all boards into a single SVG, showing each for this many
+    /// milliseconds.
+    pub animate_interval: Option<String>,
 }
 
 impl Attributes {
@@ -36,6 +40,7 @@ impl Attributes {
 
             match key {
                 "target" => parsed.target = Some(value.to_owned()),
+                "animate-interval" => parsed.animate_interval = Some(value.to_owned()),
                 _ => bail!("unknown attribute '{key}'"),
             }
         }
@@ -53,6 +58,14 @@ mod tests {
     fn target(target: &str) -> Attributes {
         Attributes {
             target: Some(target.to_owned()),
+            ..Attributes::default()
+        }
+    }
+
+    fn animate_interval(interval: &str) -> Attributes {
+        Attributes {
+            animate_interval: Some(interval.to_owned()),
+            ..Attributes::default()
         }
     }
 
@@ -62,6 +75,7 @@ mod tests {
     #[test_case(r#"d2 target="""#, &target(""); "quoted root")]
     #[test_case("d2 target=", &target(""); "empty root")]
     #[test_case(r#"d2 target="disaster recovery""#, &target("disaster recovery"); "quoted whitespace")]
+    #[test_case("d2 animate-interval=1500", &animate_interval("1500"); "animate interval")]
     fn parses(info: &str, expected: &Attributes) {
         assert_eq!(&Attributes::from_info(info).unwrap().unwrap(), expected);
     }

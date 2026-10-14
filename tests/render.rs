@@ -113,3 +113,12 @@ fn empty_diagram_is_an_error(book: &str) {
         "unexpected error: {msg}"
     );
 }
+
+#[test]
+fn animate_interval_animates_all_boards() {
+    let test_book = TestBook::new("animated").expect("couldn't create book");
+
+    // one keyframe animation per board
+    assert_eq!(test_book.chapter1().matches("@keyframes").count(), 2);
+    assert!(test_book.chapter1_contains(">zed</text>"));
+}
