@@ -1,6 +1,7 @@
 mod common;
 
 use common::TestBook;
+use test_case::test_case;
 
 #[test]
 fn inline() {
@@ -71,6 +72,20 @@ fn missing_binary_error_includes_context() {
     let msg = format!("{err:#}");
     assert!(
         msg.contains("failed to run D2 binary '/nonexistent/bin/d2' (Chapter 1, #1)"),
+        "unexpected error: {msg}"
+    );
+}
+
+#[test_case("empty"; "inline")]
+#[test_case("empty-embedded"; "embedded")]
+fn empty_diagram_is_an_error(book: &str) {
+    let Err(err) = TestBook::new(book) else {
+        panic!("build should fail when a diagram is empty and fail-on-error is set");
+    };
+
+    let msg = format!("{err:#}");
+    assert!(
+        msg.contains("D2 diagram (Chapter 1, #1) is empty"),
         "unexpected error: {msg}"
     );
 }
