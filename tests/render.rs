@@ -14,6 +14,24 @@ fn inline() {
 }
 
 #[test]
+fn inline_has_no_xml_declaration() {
+    let test_book = TestBook::new("inline").expect("couldn't create book");
+
+    // mdbook rewrites a declaration in the page as `<!--?xml ... ?-->`
+    assert!(!test_book.chapter1_contains(r"?xml"));
+}
+
+#[test]
+fn embedded_file_keeps_xml_declaration() {
+    let test_book = TestBook::new("simple").expect("couldn't create book");
+
+    let output = test_book.book.source_dir().join("d2/1.1.svg");
+    let svg = std::fs::read_to_string(output).expect("couldn't read diagram");
+
+    assert!(svg.starts_with("<?xml"));
+}
+
+#[test]
 fn simple() {
     let test_book = TestBook::new("simple").expect("couldn't create book");
 

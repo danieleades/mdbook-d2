@@ -23,7 +23,9 @@ cargo install --git https://github.com/danieleades/mdbook-d2 --locked
 
 ## Requirements
 
-This preprocessor assumes that `D2` is installed locally and on the path. D2 installation instructions can be found [here](https://github.com/terrastruct/d2#install).
+This preprocessor needs D2 0.6.9 or later, installed locally and on the path. D2 installation instructions can be found [here](https://github.com/terrastruct/d2#install).
+
+Inline rendering (`inline = true`, the default) passes D2's `--no-xml-tag` flag, which older versions of D2 reject.
 
 Check that the local installation is working correctly using
 
