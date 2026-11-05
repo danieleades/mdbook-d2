@@ -46,7 +46,7 @@ jobs:
         with:
           toolchain: nightly
           components: clippy
-          build-warnings: warn # report lints without failing the job
+          build-warnings: "" # use lint levels from the crate config, same as local builds
       - run: cargo clippy --workspace --all-targets
 
   docs:
