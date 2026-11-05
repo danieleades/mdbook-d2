@@ -139,7 +139,12 @@ impl Backend {
         ctx: &RenderContext,
         content: &str,
     ) -> anyhow::Result<Vec<Event<'static>>> {
-        let diagram = self.run_process(ctx, content, self.basic_args())?;
+        let mut args = self.basic_args();
+        if self.inline {
+            // an XML declaration is not valid inside an HTML page
+            args.insert(0, OsStr::new("--no-xml-tag"));
+        }
+        let diagram = self.run_process(ctx, content, args)?;
 
         // an empty diagram is compiled successfully, but produces no output
         ensure!(
