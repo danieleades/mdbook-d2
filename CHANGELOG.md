@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [0.3.10](https://github.com/danieleades/mdbook-d2/compare/v0.3.9...v0.3.10) - 2026-11-05
+
+### Fixed
+
+- omit the XML declaration from inline diagrams ([#211](https://github.com/danieleades/mdbook-d2/pull/211))
+- report empty diagrams as an error ([#207](https://github.com/danieleades/mdbook-d2/pull/207))
+
+### Other
+
+- *(deps)* bump the patch-updates group with 2 updates ([#212](https://github.com/danieleades/mdbook-d2/pull/212))
+- *(deps)* bump pulldown-cmark from 0.13.4 to 0.13.5 in the patch-updates group ([#210](https://github.com/danieleades/mdbook-d2/pull/210))
+
 ## [0.3.9](https://github.com/danieleades/mdbook-d2/compare/v0.3.8...v0.3.9) - 2026-10-14
 
 ### Fixed
