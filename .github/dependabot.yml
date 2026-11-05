@@ -37,8 +37,6 @@ updates:
     directory: "/"
     schedule:
       interval: daily
-    ignore:
-      - dependency-name: dtolnay/rust-toolchain
     commit-message:
       prefix: "ci"
       include: "scope"

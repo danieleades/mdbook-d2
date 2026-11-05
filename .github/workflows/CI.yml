@@ -19,9 +19,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
         with:
           toolchain: ${{ matrix.rust }}
+          build-warnings: ""
       - name: Install D2
         run: |
           curl -fsSL https://d2lang.com/install.sh | sh -s --
@@ -32,28 +33,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
         with:
+          toolchain: nightly
           components: rustfmt
+          cache: false
       - run: cargo fmt --all -- --check
 
   clippy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@nightly
+      # registers a problem matcher, so clippy lints are shown as PR annotations
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
         with:
+          toolchain: nightly
           components: clippy
-      - uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all --all-targets
+          build-warnings: "" # use lint levels from the crate config, same as local builds (default is 'deny')
+      - run: cargo clippy --workspace --all-targets
 
   docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
+        with:
+          build-warnings: ""
       - run: cargo doc --no-deps
 
   msrv:
