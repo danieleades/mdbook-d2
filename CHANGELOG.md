@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [0.3.11](https://github.com/danieleades/mdbook-d2/compare/v0.3.10...v0.3.11) - 2026-11-05
+
+### Other
+
+- standardise on actions-rust-lang/setup-rust-toolchain ([#213](https://github.com/danieleades/mdbook-d2/pull/213))
+
 ## [0.3.10](https://github.com/danieleades/mdbook-d2/compare/v0.3.9...v0.3.10) - 2026-11-05
 
 ### Fixed
