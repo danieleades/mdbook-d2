@@ -41,13 +41,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@nightly
+      # registers a problem matcher, so clippy lints are shown as PR annotations
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
         with:
+          toolchain: nightly
           components: clippy
-      - uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all --all-targets
+          build-warnings: warn # report lints without failing the job
+      - run: cargo clippy --workspace --all-targets
 
   docs:
     runs-on: ubuntu-latest
