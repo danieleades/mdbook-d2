@@ -25,13 +25,14 @@ jobs:
       - name: Install D2
         shell: bash
         run: |
-          prefix="$HOME/.local"
-          curl -fsSL https://d2lang.com/install.sh | sh -s -- --method standalone --prefix "$prefix"
-          bin_dir="$prefix/bin"
-          "$bin_dir/d2" --version
-          # GITHUB_PATH needs a native path on Windows runners
-          if command -v cygpath >/dev/null; then bin_dir="$(cygpath -w "$bin_dir")"; fi
-          echo "$bin_dir" >> "$GITHUB_PATH"
+          curl -fsSL https://d2lang.com/install.sh | sh -s -- --method standalone --prefix "$HOME/.local"
+          "$HOME/.local/bin/d2" --version
+      - name: Add D2 to PATH
+        if: runner.os != 'Windows'
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Add D2 to PATH (Windows)
+        if: runner.os == 'Windows'
+        run: Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.local\bin"
       - run: cargo test --all
 
   fmt:
