@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           prefix="$HOME/.local"
-          curl -fsSL https://d2lang.com/install.sh | sh -s -- --prefix "$prefix"
+          curl -fsSL https://d2lang.com/install.sh | sh -s -- --method standalone --prefix "$prefix"
           "$prefix/bin/d2" --version
           bin_dir="$prefix/bin"
           # GITHUB_PATH needs a native path on Windows runners
