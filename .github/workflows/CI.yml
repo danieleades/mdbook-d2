@@ -27,8 +27,8 @@ jobs:
         run: |
           prefix="$HOME/.local"
           curl -fsSL https://d2lang.com/install.sh | sh -s -- --method standalone --prefix "$prefix"
-          "$prefix/bin/d2" --version
           bin_dir="$prefix/bin"
+          "$bin_dir/d2" --version
           # GITHUB_PATH needs a native path on Windows runners
           if command -v cygpath >/dev/null; then bin_dir="$(cygpath -w "$bin_dir")"; fi
           echo "$bin_dir" >> "$GITHUB_PATH"
