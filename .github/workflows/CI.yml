@@ -14,8 +14,7 @@ jobs:
           - {build: stable, os: ubuntu-latest, rust: stable}
           - {build: nightly, os: ubuntu-latest, rust: nightly}
           - {build: macos, os: macos-latest, rust: stable}
-            # see https://github.com/terrastruct/d2/issues/2044
-#          - {build: windows, os: windows-latest, rust: stable}
+          - {build: windows, os: windows-latest, rust: stable}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -24,9 +23,16 @@ jobs:
           toolchain: ${{ matrix.rust }}
           build-warnings: ""
       - name: Install D2
+        shell: bash
         run: |
-          curl -fsSL https://d2lang.com/install.sh | sh -s --
-          echo "$(which d2)" >> $GITHUB_PATH
+          curl -fsSL https://d2lang.com/install.sh | sh -s -- --method standalone --prefix "$HOME/.local"
+          "$HOME/.local/bin/d2" --version
+      - name: Add D2 to PATH
+        if: runner.os != 'Windows'
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Add D2 to PATH (Windows)
+        if: runner.os == 'Windows'
+        run: Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.local\bin"
       - run: cargo test --all
 
   fmt:
